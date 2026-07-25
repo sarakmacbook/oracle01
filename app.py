@@ -1131,6 +1131,7 @@ def run_automated_creation(config, account_config, compute_client, network_clien
 
         shape = account_config.get('shape', '')
         is_flex = '.Flex' in shape
+        add_log(f"Debug -> Shape='{shape}', is_flex={is_flex}")
         shape_config = None
         if is_flex:
             ocpus = int(account_config.get('ocpus', 2))
@@ -1139,6 +1140,8 @@ def run_automated_creation(config, account_config, compute_client, network_clien
                 ocpus=ocpus, memory_in_gbs=memory
             )
             add_log(f"Debug -> Flex shape config: ocpus={ocpus}, memory={memory}")
+        else:
+            add_log(f"Debug -> Non-flex shape, no shape_config needed")
 
         instance_details = oci.core.models.LaunchInstanceDetails(
             compartment_id=config['tenancy'],
