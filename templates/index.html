@@ -318,6 +318,7 @@
         }
     </style>
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
     <div class="container">
@@ -576,6 +577,8 @@
     let logOffset = 0;
     let pollInterval = null;
     let statusInterval = null;
+    let userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    addLog('Timezone detected: ' + userTimezone, 'info');
 
     function togglePanel(name) {
         const body = document.getElementById(name + 'Body');
@@ -712,7 +715,8 @@
                     tenancy: document.getElementById('cfgTenancy').value,
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
-                    private_key: key
+                    private_key: key,
+                    timezone: userTimezone
                 })
             });
             const data = await res.json();
@@ -817,7 +821,8 @@
                     tenancy: document.getElementById('cfgTenancy').value,
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
-                    private_key: key
+                    private_key: key,
+                    timezone: userTimezone
                 })
             });
             const data = await res.json();
@@ -873,7 +878,8 @@
                     region: document.getElementById('cfgRegion').value,
                     private_key: key,
                     shape: document.getElementById('shapeSelect').value,
-                    all_os_mode: document.getElementById('allOS').checked
+                    all_os_mode: document.getElementById('allOS').checked,
+                    timezone: userTimezone
                 })
             });
             const data = await res.json();
@@ -927,7 +933,8 @@
                     tenancy: document.getElementById('cfgTenancy').value,
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
-                    private_key: key
+                    private_key: key,
+                    timezone: userTimezone
                 })
             });
             const data = await res.json();
@@ -986,14 +993,15 @@
                 tenancy: document.getElementById('cfgTenancy').value,
                 fingerprint: document.getElementById('cfgFingerprint').value,
                 region: document.getElementById('cfgRegion').value,
-                private_key: key
+                private_key: key,
+                timezone: userTimezone
             };
             if (subnetId) payload.subnet_id = subnetId;
 
             var res = await fetch('/api/list-vnics', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({...payload, timezone: userTimezone})
             });
             var data = await res.json();
 
@@ -1080,7 +1088,8 @@
                     subnet_id: subnetId,
                     ports: ports,
                     cidr: cidr,
-                    direction: direction
+                    direction: direction,
+                    timezone: userTimezone
                 })
             });
             var data = await res.json();
@@ -1141,7 +1150,8 @@
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
                     private_key: key,
-                    subnet_id: subnetId
+                    subnet_id: subnetId,
+                    timezone: userTimezone
                 })
             });
             var data = await res.json();
@@ -1196,7 +1206,7 @@
             const res = await fetch('/api/test-telegram', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bot_token: token, chat_id: chat })
+                body: JSON.stringify({ bot_token: token, chat_id: chat, timezone: userTimezone })
             });
             const data = await res.json();
 
@@ -1252,7 +1262,7 @@
             const res = await fetch('/api/auto-launch-loop', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({...payload, timezone: userTimezone})
             });
             const data = await res.json();
 
@@ -1352,7 +1362,8 @@
                     tenancy: document.getElementById('cfgTenancy').value,
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
-                    private_key: key
+                    private_key: key,
+                    timezone: userTimezone
                 })
             });
             const data = await res.json();
@@ -1415,7 +1426,8 @@
                     tenancy: document.getElementById('cfgTenancy').value,
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
-                    private_key: key
+                    private_key: key,
+                    timezone: userTimezone
                 })
             });
             const data = await res.json();
