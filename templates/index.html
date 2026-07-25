@@ -836,8 +836,32 @@
                 html += '<div class="quota-item"><div class="quota-header"><span style="color:var(--text-secondary)">Micro instances</span><span style="color:var(--text);font-weight:500">' + u.micro.used + ' / ' + u.micro.limit + '</span></div><div class="quota-bar"><div class="quota-fill" style="width:' + u.micro.percent + '%;background:' + mColor + '"></div></div></div>';
                 const aColor = u.arm.ocpu_percent >= 100 ? 'var(--danger)' : u.arm.ocpu_percent >= 70 ? 'var(--warning)' : 'var(--positive)';
                 html += '<div class="quota-item"><div class="quota-header"><span style="color:var(--text-secondary)">ARM OCPUs</span><span style="color:var(--text);font-weight:500">' + u.arm.used_ocpus + ' / ' + u.arm.limit_ocpus + '</span></div><div class="quota-bar"><div class="quota-fill" style="width:' + u.arm.ocpu_percent + '%;background:' + aColor + '"></div></div></div>';
+
+                // Instance list
+                if (u.all_instances && u.all_instances.length > 0) {
+                    html += '<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">';
+                    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+                    html += '<span style="font-size:13px;font-weight:600;color:var(--text);">Instances (' + u.all_instances.length + ')</span>';
+                    html += '<button onclick="deleteAllInstances()" style="padding:4px 10px;border:1px solid var(--danger);border-radius:4px;background:rgba(239,68,68,0.1);color:var(--danger);font-size:11px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='rgba(239,68,68,0.2)'" onmouseout="this.style.background='rgba(239,68,68,0.1)'">&#128293; DELETE ALL</button>';
+                    html += '</div>';
+                    u.all_instances.forEach(inst => {
+                        const shapeInfo = inst.ocpus ? ' (' + inst.ocpus + ' OCPU, ' + inst.memory + ' GB)' : '';
+                        const stateColor = inst.state === 'RUNNING' ? 'var(--positive)' : 'var(--warning)';
+                        html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--bg);border-radius:6px;margin-bottom:6px;font-size:12px;">';
+                        html += '<div style="overflow:hidden;">';
+                        html += '<div style="color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + inst.name + '</div>';
+                        html += '<div style="color:var(--text-muted);font-size:11px;">' + inst.shape + shapeInfo + ' | <span style="color:' + stateColor + '">' + inst.state + '</span></div>';
+                        html += '</div>';
+                        html += '<button onclick="deleteInstance('' + inst.id + '', '' + inst.name + '')" style="padding:3px 8px;border:1px solid rgba(239,68,68,0.3);border-radius:4px;background:transparent;color:var(--danger);font-size:11px;cursor:pointer;flex-shrink:0;margin-left:8px;" title="Delete this instance">&#128465;</button>';
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                } else {
+                    html += '<div style="margin-top:12px;font-size:12px;color:var(--text-muted);">No instances found.</div>';
+                }
+
                 panel.innerHTML = html;
-                addLog('Free tier quota loaded', 'success');
+                addLog('Free tier quota loaded — ' + (u.all_instances ? u.all_instances.length : 0) + ' instance(s)', 'success');
             } else {
                 panel.innerHTML = '<div style="color:var(--danger);font-size:12px;">Error: ' + data.error + '</div>';
                 addLog('Quota check failed: ' + data.error, 'error');
@@ -1462,6 +1486,99 @@
 
         btn.disabled = false;
         btn.textContent = 'Scan shapes';
+    }
+
+    async function deleteInstance(instanceId, instanceName) {
+        parseConfig();
+        const user = document.getElementById('cfgUser').value;
+        const key = document.getElementById('cfgKey').value;
+
+        if (!user || !key) {
+            addLog('Error: Credentials required first', 'error');
+            return;
+        }
+
+        const confirmMsg = 'DANGER: Delete instance "' + instanceName + '"?\n\nThis action cannot be undone.';
+        if (!confirm(confirmMsg)) {
+            addLog('Delete cancelled', 'warn');
+            return;
+        }
+
+        addLog('Deleting instance "' + instanceName + '"...', 'warn');
+
+        try {
+            const res = await fetch('/api/delete-instance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user: user,
+                    tenancy: document.getElementById('cfgTenancy').value,
+                    fingerprint: document.getElementById('cfgFingerprint').value,
+                    region: document.getElementById('cfgRegion').value,
+                    private_key: key,
+                    instance_id: instanceId,
+                    timezone: userTimezone
+                })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                addLog('Deleted: ' + data.message, 'success');
+                setTimeout(checkQuota, 2000);
+            } else {
+                addLog('Delete failed: ' + data.error, 'error');
+            }
+        } catch (err) {
+            addLog('Delete error: ' + err.message, 'error');
+        }
+    }
+
+    async function deleteAllInstances() {
+        parseConfig();
+        const user = document.getElementById('cfgUser').value;
+        const key = document.getElementById('cfgKey').value;
+
+        if (!user || !key) {
+            addLog('Error: Credentials required first', 'error');
+            return;
+        }
+
+        const confirmMsg = '&#128293; DANGER &#128293;\n\nDelete ALL instances in this tenancy?\n\nThis will terminate EVERY running and stopped instance.\n\nThis action CANNOT be undone.\n\nType DELETE to confirm:';
+        const input = prompt(confirmMsg);
+        if (input !== 'DELETE') {
+            addLog('Bulk delete cancelled', 'warn');
+            return;
+        }
+
+        addLog('&#128293; Initiating deletion of ALL instances...', 'error');
+
+        try {
+            const res = await fetch('/api/delete-all-instances', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user: user,
+                    tenancy: document.getElementById('cfgTenancy').value,
+                    fingerprint: document.getElementById('cfgFingerprint').value,
+                    region: document.getElementById('cfgRegion').value,
+                    private_key: key,
+                    timezone: userTimezone
+                })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                addLog('Deleted ' + data.deleted + ' instance(s)', 'success');
+                if (data.failed && data.failed.length > 0) {
+                    data.failed.forEach(f => addLog('Failed: ' + f.name + ' — ' + f.error, 'error'));
+                }
+                setTimeout(checkQuota, 3000);
+            } else {
+                addLog('Bulk delete failed: ' + data.error, 'error');
+            }
+        } catch (err) {
+            addLog('Bulk delete error: ' + err.message, 'error');
+        }
     }
 
     function clearAll() {
