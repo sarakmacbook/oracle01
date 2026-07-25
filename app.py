@@ -125,6 +125,11 @@ def require_auth(f):
     return decorated
 
 
+@app.route('/health')
+def health():
+    return jsonify({'status': 'ok'}), 200
+
+
 @app.route('/')
 def home():
     try:
@@ -1124,15 +1129,16 @@ def run_automated_creation(config, account_config, compute_client, network_clien
                 f"OCPUs: {account_config.get('ocpus', 'N/A')} | RAM: {account_config.get('memory', 'N/A')}GB")
         add_log(f"Debug -> Subnet details: assign_public_ip=True")
 
-        is_arm = account_config.get('shape') == "VM.Standard.A1.Flex"
+        shape = account_config.get('shape', '')
+        is_flex = '.Flex' in shape
         shape_config = None
-        if is_arm:
+        if is_flex:
             ocpus = int(account_config.get('ocpus', 2))
             memory = int(account_config.get('memory', 12))
             shape_config = oci.core.models.LaunchInstanceShapeConfigDetails(
                 ocpus=ocpus, memory_in_gbs=memory
             )
-            add_log(f"Debug -> ARM shape config: ocpus={ocpus}, memory={memory}")
+            add_log(f"Debug -> Flex shape config: ocpus={ocpus}, memory={memory}")
 
         instance_details = oci.core.models.LaunchInstanceDetails(
             compartment_id=config['tenancy'],
