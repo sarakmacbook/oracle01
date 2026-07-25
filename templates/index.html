@@ -842,7 +842,7 @@
                     html += '<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">';
                     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
                     html += '<span style="font-size:13px;font-weight:600;color:var(--text);">Instances (' + u.all_instances.length + ')</span>';
-                    html += '<button onclick="deleteAllInstances()" style="padding:4px 10px;border:1px solid var(--danger);border-radius:4px;background:rgba(239,68,68,0.1);color:var(--danger);font-size:11px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='rgba(239,68,68,0.2)'" onmouseout="this.style.background='rgba(239,68,68,0.1)'">&#128293; DELETE ALL</button>';
+                    html += '<button onclick="deleteAllInstances()" style="padding:4px 10px;border:1px solid var(--danger);border-radius:4px;background:rgba(239,68,68,0.1);color:var(--danger);font-size:11px;font-weight:600;cursor:pointer;">&#128293; DELETE ALL</button>';
                     html += '</div>';
                     u.all_instances.forEach(inst => {
                         const shapeInfo = inst.ocpus ? ' (' + inst.ocpus + ' OCPU, ' + inst.memory + ' GB)' : '';
@@ -1543,7 +1543,7 @@
             return;
         }
 
-        const confirmMsg = '&#128293; DANGER &#128293;\n\nDelete ALL instances in this tenancy?\n\nThis will terminate EVERY running and stopped instance.\n\nThis action CANNOT be undone.\n\nType DELETE to confirm:';
+        const confirmMsg = 'DANGER: Delete ALL instances in this tenancy?' + String.fromCharCode(10) + String.fromCharCode(10) + 'This will terminate EVERY running and stopped instance.' + String.fromCharCode(10) + String.fromCharCode(10) + 'This action CANNOT be undone.' + String.fromCharCode(10) + String.fromCharCode(10) + 'Type DELETE to confirm:';
         const input = prompt(confirmMsg);
         if (input !== 'DELETE') {
             addLog('Bulk delete cancelled', 'warn');
