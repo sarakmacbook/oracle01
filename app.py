@@ -9,17 +9,28 @@ import requests
 from flask import Flask, render_template, request, jsonify, Response
 import oci
 
-# ---- Timezone Configuration (Phnom Penh - ICT, UTC+7) ----
-from zoneinfo import ZoneInfo
-PHNOM_PENH_TZ = ZoneInfo("Asia/Phnom_Penh")
+# ---- Timezone Configuration (User device timezone) ----
+from zoneinfo import ZoneInfo, available_timezones
 
-def get_phnom_penh_time():
-    return datetime.datetime.now(PHNOM_PENH_TZ)
+def get_user_tz(tz_name=None):
+    """Resolve timezone from user request, fallback to UTC."""
+    if tz_name and tz_name in available_timezones():
+        return ZoneInfo(tz_name)
+    return ZoneInfo("UTC")
 
-def format_phnom_penh_time(dt=None):
+def get_user_time(tz_name=None):
+    tz = get_user_tz(tz_name)
+    return datetime.datetime.now(tz)
+
+def format_user_time(dt=None, tz_name=None):
     if dt is None:
-        dt = get_phnom_penh_time()
+        dt = get_user_time(tz_name)
     return dt.strftime('%Y-%m-%d %H:%M:%S')
+
+# Legacy alias for backward compatibility
+PHNOM_PENH_TZ = ZoneInfo("Asia/Phnom_Penh")
+get_phnom_penh_time = lambda: get_user_time("Asia/Phnom_Penh")
+format_phnom_penh_time = lambda dt=None: format_user_time(dt, "Asia/Phnom_Penh")
 
 app = Flask(__name__)
 
@@ -48,6 +59,15 @@ automation_running = False
 automation_shape = None
 stop_event = threading.Event()
 
+# Per-request timezone (set by endpoints that receive it)
+_user_tz = threading.local()
+
+def set_user_tz(tz_name):
+    _user_tz.name = tz_name
+
+def get_current_tz():
+    return getattr(_user_tz, 'name', None)
+
 # ---- Telegram live log settings ----
 tg_live_lock = threading.Lock()
 tg_live_enabled = False
@@ -58,7 +78,8 @@ tg_live_min_interval = 3  # seconds between live log sends
 
 
 def add_log(message):
-    timestamp = format_phnom_penh_time()
+    tz = get_current_tz()
+    timestamp = format_user_time(tz_name=tz)
     line = f"[{timestamp}] {message}"
     print(line)
     with logs_lock:
@@ -142,6 +163,7 @@ def home():
 @require_auth
 def list_available_images():
     data = request.json or {}
+    set_user_tz(data.get('timezone'))
     config = build_config(data)
     shape = data.get('shape')
     all_os_mode = data.get('all_os_mode', False)
@@ -206,6 +228,7 @@ def list_available_images():
 @require_auth
 def list_available_subnets():
     data = request.json or {}
+    set_user_tz(data.get('timezone'))
     config = build_config(data)
 
     try:
@@ -252,6 +275,7 @@ def list_available_subnets():
 def list_available_shapes():
     """List all available compute shapes across availability domains."""
     data = request.json or {}
+    set_user_tz(data.get('timezone'))
     config = build_config(data)
 
     try:
@@ -314,6 +338,7 @@ def list_available_shapes():
 def create_subnet():
     """Create a VCN, Internet Gateway, Route Table, and public subnet if none exist."""
     data = request.json or {}
+    set_user_tz(data.get('timezone'))
     config = build_config(data)
 
     # Optional overrides
@@ -466,6 +491,7 @@ def create_subnet():
 def test_launch():
     """Debug endpoint: validates launch params without actually creating instance."""
     data = request.json or {}
+    set_user_tz(data.get('timezone'))
     config = build_config(data)
 
     try:
@@ -560,6 +586,7 @@ def test_launch():
 def list_vnics():
     """List VNICs (network interfaces) for debugging network setup."""
     data = request.json or {}
+    set_user_tz(data.get('timezone'))
     config = build_config(data)
     target_subnet_id = data.get('subnet_id', '').strip() or None
 
@@ -624,6 +651,7 @@ def list_vnics():
 @require_auth
 def open_firewall():
     data = request.json or {}
+    set_user_tz(data.get('timezone'))
     config = build_config(data)
     subnet_id = data.get('subnet_id')
     ports = data.get('ports', 'all')
@@ -771,6 +799,7 @@ def open_firewall():
 def scan_security_rules():
     """Scan existing security rules on a subnet."""
     data = request.json or {}
+    set_user_tz(data.get('timezone'))
     config = build_config(data)
     subnet_id = data.get('subnet_id')
 
@@ -985,7 +1014,7 @@ def get_free_tier_usage(config, compute_client, block_client, identity_client):
     }
 
 
-def send_telegram_message(bot_token, chat_id, message):
+def send_telegram_message(bot_token, chat_id, message, tz_name=None):
     if not bot_token or not chat_id:
         return False, "Missing bot token or chat ID"
     try:
@@ -1043,8 +1072,9 @@ def get_oci_username(config, identity_client):
 
 def run_automated_creation(config, account_config, compute_client, network_client, identity_client,
                            retry_delay=60, randomize_delay=False, random_min=25, random_max=60,
-                           telegram_bot_token=None, telegram_chat_id=None):
+                           telegram_bot_token=None, telegram_chat_id=None, tz_name=None):
     global automation_running
+    set_user_tz(tz_name)
 
     oci_username = None
     target_region = config.get('region', 'unknown')
@@ -1307,6 +1337,7 @@ def run_automated_creation(config, account_config, compute_client, network_clien
 @require_auth
 def free_tier_status():
     data = request.json or {}
+    set_user_tz(data.get('timezone'))
     config = build_config(data)
 
     try:
@@ -1342,6 +1373,7 @@ def get_status():
 def auto_launch():
     global automation_running, tg_live_enabled, tg_live_bot_token, tg_live_chat_id
     data = request.json or {}
+    set_user_tz(data.get('timezone'))
     config = build_config(data)
 
     try:
@@ -1397,7 +1429,8 @@ def auto_launch():
             target=run_automated_creation,
             args=(config, data, compute_client, network_client, identity_client,
                   retry_delay, randomize_delay, random_min, random_max,
-                  data.get('telegram_bot_token'), data.get('telegram_chat_id')),
+                  data.get('telegram_bot_token'), data.get('telegram_chat_id'),
+                  get_current_tz()),
             daemon=True
         )
         thread.start()
@@ -1438,11 +1471,12 @@ def fetch_live_logs():
 @require_auth
 def test_telegram():
     data = request.json or {}
+    set_user_tz(data.get('timezone'))
     bot_token = data.get('bot_token', '').strip()
     chat_id = data.get('chat_id', '').strip()
     if not bot_token or not chat_id:
         return jsonify({'success': False, 'error': 'Bot token and chat ID are required'})
-    pp_time = format_phnom_penh_time()
+    user_time = format_user_time(tz_name=get_current_tz())
     ok, err = send_telegram_message(
         bot_token, chat_id,
         f"&#9989; <b>OCI Instance loop Connected</b>\n\n"
@@ -1459,6 +1493,7 @@ def test_telegram():
 @require_auth
 def send_telegram():
     data = request.json or {}
+    set_user_tz(data.get('timezone'))
     ok, err = send_telegram_message(
         data.get('bot_token'), data.get('chat_id'), data.get('message', '')
     )
