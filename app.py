@@ -941,6 +941,77 @@ def check_free_tier_limits(config, account_config, compute_client, block_client,
     return True, ""
 
 
+
+
+def get_instance_public_ip(config, compute_client, network_client, instance_id):
+    """Wait for instance to be RUNNING and return its public IP."""
+    try:
+        # Wait up to 60 seconds for RUNNING state
+        for _ in range(30):
+            inst = compute_client.get_instance(instance_id=instance_id).data
+            if inst.lifecycle_state == 'RUNNING':
+                break
+            if inst.lifecycle_state in ('TERMINATED', 'TERMINATING'):
+                return None, 'Instance terminated'
+            time.sleep(2)
+
+        # Get VNIC attachments
+        attachments = compute_client.list_vnic_attachments(
+            compartment_id=config['tenancy'],
+            instance_id=instance_id
+        ).data
+
+        for att in attachments:
+            if getattr(att, 'lifecycle_state', '') == 'ATTACHED':
+                vnic = network_client.get_vnic(vnic_id=att.vnic_id).data
+                if vnic.public_ip:
+                    return vnic.public_ip, None
+
+        return None, 'No public IP assigned'
+    except Exception as e:
+        return None, str(e)
+
+
+def list_all_instances(config, compute_client, identity_client):
+    """Return all instances with details."""
+    tenancy = config['tenancy']
+    instances = compute_client.list_instances(compartment_id=tenancy).data
+
+    result = []
+    for inst in instances:
+        if inst.lifecycle_state in ('TERMINATED', 'TERMINATING'):
+            continue
+
+        shape = inst.shape
+        ocpus = None
+        memory = None
+        if hasattr(inst, 'shape_config') and inst.shape_config:
+            ocpus = inst.shape_config.ocpus
+            memory = inst.shape_config.memory_in_gbs
+
+        result.append({
+            'id': inst.id,
+            'name': inst.display_name,
+            'shape': shape,
+            'state': inst.lifecycle_state,
+            'ocpus': ocpus,
+            'memory': memory,
+            'time_created': inst.time_created.isoformat() if inst.time_created else None,
+            'availability_domain': inst.availability_domain
+        })
+
+    return result
+
+
+def terminate_instance(compute_client, instance_id):
+    """Terminate a single instance."""
+    try:
+        compute_client.terminate_instance(instance_id=instance_id)
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+
 def get_free_tier_usage(config, compute_client, block_client, identity_client):
     tenancy = config['tenancy']
     ads = identity_client.list_availability_domains(compartment_id=tenancy).data
@@ -987,6 +1058,8 @@ def get_free_tier_usage(config, compute_client, block_client, identity_client):
     ocpus_remaining = max(0, 2 - total_ocpus)
     memory_remaining = max(0, 12 - total_memory)
 
+    all_instances = list_all_instances(config, compute_client, identity_client)
+
     return {
         'storage': {
             'used_gb': total_storage,
@@ -1010,7 +1083,8 @@ def get_free_tier_usage(config, compute_client, block_client, identity_client):
             'instances': arm_instances,
             'ocpu_percent': round((total_ocpus / 2) * 100, 1) if total_ocpus > 0 else 0,
             'memory_percent': round((total_memory / 12) * 100, 1) if total_memory > 0 else 0
-        }
+        },
+        'all_instances': all_instances
     }
 
 
@@ -1219,26 +1293,40 @@ def run_automated_creation(config, account_config, compute_client, network_clien
 
             try:
                 add_log(f"Attempt {attempts}: sending instance launch request...")
-                compute_client.launch_instance(instance_details)
-                add_log("SUCCESS! Instance created and running.")
+                response = compute_client.launch_instance(instance_details)
+                instance_id = response.data.id
+                add_log(f"SUCCESS! Instance created: {instance_id[:20]}...")
+
+                # Get public IP
+                add_log("Fetching instance public IP...")
+                public_ip, ip_err = get_instance_public_ip(
+                    config, compute_client, network_client, instance_id
+                )
+                if public_ip:
+                    add_log(f"Public IP: {public_ip}")
+                elif ip_err:
+                    add_log(f"Could not get public IP: {ip_err}")
+
                 success = True
                 if telegram_bot_token and telegram_chat_id:
                     instance_name = account_config.get('display_name', 'AlwaysFree-Bot')
                     shape = account_config.get('shape', 'Unknown')
                     region = config.get('region', 'unknown')
-                    pp_time = format_phnom_penh_time()
+                    user_time = format_user_time(tz_name=get_current_tz())
                     user_line = f"<b>User:</b> {oci_username}\n" if oci_username else ""
+                    ip_line = f"<b>Public IP:</b> {public_ip}\n" if public_ip else ""
                     tg_msg = (
                         f"&#9989; <b>OCI Provisioner Success!</b>\n\n"
                         f"<b>Instance:</b> {instance_name}\n"
                         f"<b>Shape:</b> {shape}\n"
                         f"<b>Region:</b> {region}\n"
+                        f"{ip_line}"
                         f"{user_line}"
-                        f"<b>Time:</b> {pp_time} (Phnom Penh)\n"
+                        f"<b>Time:</b> {user_time}\n"
                         f"<b>Status:</b> Running\n\n"
                         f"Your Always Free instance has been successfully provisioned!"
                     )
-                    tg_ok, tg_err = send_telegram_message(telegram_bot_token, telegram_chat_id, tg_msg)
+                    send_telegram_message(telegram_bot_token, telegram_chat_id, tg_msg, get_current_tz())
                     if tg_ok:
                         add_log("Telegram success alert sent.")
                     else:
@@ -1498,6 +1586,97 @@ def send_telegram():
         data.get('bot_token'), data.get('chat_id'), data.get('message', '')
     )
     return jsonify({'success': ok, 'error': err})
+
+
+
+
+@app.route('/api/list-instances', methods=['POST'])
+@require_auth
+def api_list_instances():
+    """List all instances in the tenancy."""
+    data = request.json or {}
+    set_user_tz(data.get('timezone'))
+    config = build_config(data)
+
+    try:
+        oci.config.validate_config(config)
+        compute_client = oci.core.ComputeClient(config)
+        identity_client = oci.identity.IdentityClient(config)
+
+        instances = list_all_instances(config, compute_client, identity_client)
+        return jsonify({'success': True, 'instances': instances})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/delete-instance', methods=['POST'])
+@require_auth
+def api_delete_instance():
+    """Delete a single instance by ID."""
+    data = request.json or {}
+    set_user_tz(data.get('timezone'))
+    config = build_config(data)
+    instance_id = data.get('instance_id')
+
+    if not instance_id:
+        return jsonify({'success': False, 'error': 'instance_id required'})
+
+    try:
+        oci.config.validate_config(config)
+        compute_client = oci.core.ComputeClient(config)
+
+        # Get instance name before deleting for logging
+        try:
+            inst = compute_client.get_instance(instance_id=instance_id).data
+            name = inst.display_name
+        except:
+            name = instance_id[:20]
+
+        ok, err = terminate_instance(compute_client, instance_id)
+        if ok:
+            add_log(f"Instance '{name}' ({instance_id[:20]}...) termination initiated.")
+            return jsonify({'success': True, 'message': f"Instance '{name}' termination initiated"})
+        else:
+            return jsonify({'success': False, 'error': err})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/delete-all-instances', methods=['POST'])
+@require_auth
+def api_delete_all_instances():
+    """Delete ALL non-terminated instances. DANGER!"""
+    data = request.json or {}
+    set_user_tz(data.get('timezone'))
+    config = build_config(data)
+
+    try:
+        oci.config.validate_config(config)
+        compute_client = oci.core.ComputeClient(config)
+        identity_client = oci.identity.IdentityClient(config)
+
+        instances = list_all_instances(config, compute_client, identity_client)
+        if not instances:
+            return jsonify({'success': True, 'message': 'No instances to delete', 'deleted': 0})
+
+        deleted = 0
+        failed = []
+        for inst in instances:
+            ok, err = terminate_instance(compute_client, inst['id'])
+            if ok:
+                add_log(f"Terminating '{inst['name']}' ({inst['id'][:20]}...)")
+                deleted += 1
+            else:
+                failed.append({'name': inst['name'], 'error': err})
+
+        return jsonify({
+            'success': True,
+            'message': f"Initiated termination for {deleted} instance(s)",
+            'deleted': deleted,
+            'failed': failed
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 
 if __name__ == '__main__':
