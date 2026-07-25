@@ -1388,13 +1388,13 @@ def run_automated_creation(config, account_config, compute_client, network_clien
             add_log("Provisioning loop ended without success.")
             if telegram_bot_token and telegram_chat_id:
                 user_line = f"<b>User:</b> {oci_username}\n" if oci_username else ""
-                pp_time = format_phnom_penh_time()
+                user_time = format_user_time(tz_name=get_current_tz())
                 tg_msg = (
                     f"&#10060; <b>OCI Provisioner Stopped</b>\n\n"
                     f"{user_line}"
                     f"Loop stopped after {attempts} attempts without success.\n"
                     f"<b>Region:</b> {config.get('region', 'unknown')}\n"
-                    f"<b>Time:</b> {pp_time} (Phnom Penh)"
+                    f"<b>Time:</b> {user_time}"
                 )
                 send_telegram_message(telegram_bot_token, telegram_chat_id, tg_msg)
 
@@ -1406,12 +1406,12 @@ def run_automated_creation(config, account_config, compute_client, network_clien
             add_log(f"Automation engine failure: {msg}")
         if telegram_bot_token and telegram_chat_id:
             user_line = f"<b>User:</b> {oci_username}\n" if oci_username else ""
-            pp_time = format_phnom_penh_time()
+            user_time = format_user_time(tz_name=get_current_tz())
             tg_msg = (
                 f"&#10060; <b>OCI Provisioner Error</b>\n\n"
                 f"{user_line}"
                 f"Automation engine failure:\n{msg[:200]}\n"
-                f"<b>Time:</b> {pp_time} (Phnom Penh)"
+                f"<b>Time:</b> {user_time}"
             )
             send_telegram_message(telegram_bot_token, telegram_chat_id, tg_msg)
 
@@ -1569,7 +1569,7 @@ def test_telegram():
         bot_token, chat_id,
         f"&#9989; <b>OCI Instance loop Connected</b>\n\n"
         f"Your Telegram alerts are now active.\n"
-        f"<b>Server Time:</b> {pp_time} (Phnom Penh, ICT)\n\n"
+        f"<b>Server Time:</b> {user_time} (Phnom Penh, ICT)\n\n"
         f"You will receive notifications when provisioning succeeds or fails."
     )
     if ok:
