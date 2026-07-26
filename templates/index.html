@@ -374,26 +374,23 @@
                 <div class="form-group">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
                         <label class="form-label" style="margin-bottom:0;">Raw config block</label>
-                        <label style="position:relative;cursor:pointer;">
-                            <input type="file" id="configFile" accept=".txt,.conf,.config" onchange="handleConfigFile()" style="position:absolute;opacity:0;width:0;height:0;">
-                            <span style="font-size:11px;color:var(--accent);font-weight:500;display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);">
+                        <input type="file" id="configFile" style="display:none;" onchange="handleConfigFile()">
+                        <span onclick="document.getElementById('configFile').click()" style="cursor:pointer;font-size:11px;color:var(--accent);font-weight:500;display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                                 Upload .txt
                             </span>
-                        </label>
                     </div>
                     <textarea id="rawConfig" class="form-textarea" oninput="parseConfig()" placeholder="Paste OCI config here or upload a .txt file..."></textarea>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Private key (.pem)</label>
-                    <label class="upload-zone" id="keyZone" style="display:block;cursor:pointer;">
-                        <input type="file" id="keyFile" accept=".pem,.txt,.key" onchange="handleKeyFile()" style="position:absolute;opacity:0;width:0;height:0;">
+                    <input type="file" id="keyFile" style="display:none;" onchange="handleKeyFile()">
+                    <div class="upload-zone" id="keyZone" onclick="document.getElementById('keyFile').click()">
                         <div id="keyZoneContent">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                            <div style="font-size:12px;color:var(--text-muted);">Click or drop .pem, .txt, or .key file</div>
+                            <div style="font-size:12px;color:var(--text-muted);">Click to upload .pem, .txt, or .key</div>
                         </div>
-                    </label>
-                    <div style="margin-top:6px;font-size:11px;color:var(--text-muted);text-align:center;">Double-click to replace file</div>
+                    </div>
                 </div>
                 <div class="btn-row">
                     <button class="btn" id="quotaBtn" onclick="checkQuota()">Check free tier</button>
@@ -486,14 +483,13 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">SSH public key</label>
-                    <label class="upload-zone" id="sshZone" style="display:block;cursor:pointer;">
-                        <input type="file" id="sshFile" accept=".pub,.txt" onchange="handleSSHFile()" style="position:absolute;opacity:0;width:0;height:0;">
+                    <input type="file" id="sshFile" style="display:none;" onchange="handleSSHFile()">
+                    <div class="upload-zone" id="sshZone" onclick="document.getElementById('sshFile').click()">
                         <div id="sshZoneContent">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                            <div style="font-size:12px;color:var(--text-muted);">Click or drop .pub, .txt file</div>
+                            <div style="font-size:12px;color:var(--text-muted);">Click to upload .pub or .txt</div>
                         </div>
-                    </label>
-                    <div style="margin-top:6px;font-size:11px;color:var(--text-muted);text-align:center;">Double-click to replace file</div>
+                    </div>
                     <textarea id="sshKey" class="form-textarea ssh-area" placeholder="ssh-rsa AAAAB3..."></textarea>
                 </div>
                 <div class="form-group" style="background:var(--surface-raised);padding:12px;border-radius:var(--radius-md);border:1px solid var(--border);">
@@ -642,8 +638,11 @@
     }
 
     function handleKeyFile() {
-        const file = document.getElementById('keyFile').files[0];
-        if (!file) return;
+        console.log('handleKeyFile called');
+        const fileInput = document.getElementById('keyFile');
+        const file = fileInput.files[0];
+        if (!file) { console.log('No file selected'); return; }
+        console.log('File selected:', file.name, file.size);
         const reader = new FileReader();
         reader.onload = e => {
             document.getElementById('cfgKey').value = e.target.result;
@@ -653,24 +652,29 @@
             zone.classList.add('success');
             addLog('Private key loaded: ' + file.name, 'success');
         };
+        reader.onerror = () => addLog('Failed to read key file', 'error');
         reader.readAsText(file);
+        fileInput.value = '';
     }
 
     document.getElementById('keyZone').addEventListener('dblclick', function(e) {
-        if (e.target.tagName === 'INPUT') return;
+        e.preventDefault();
         document.getElementById('cfgKey').value = '';
         this.classList.remove('success');
         document.getElementById('keyZoneContent').innerHTML =
             '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;">' +
             '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' +
-            '<div style="font-size:12px;color:var(--text-muted);">Click or drop .pem, .txt, or .key file</div>';
+            '<div style="font-size:12px;color:var(--text-muted);">Click to upload .pem, .txt, or .key</div>';
         document.getElementById('keyFile').value = '';
         addLog('Private key cleared', 'warn');
     });
 
     function handleSSHFile() {
-        const file = document.getElementById('sshFile').files[0];
-        if (!file) return;
+        console.log('handleSSHFile called');
+        const fileInput = document.getElementById('sshFile');
+        const file = fileInput.files[0];
+        if (!file) { console.log('No file selected'); return; }
+        console.log('File selected:', file.name, file.size);
         const reader = new FileReader();
         reader.onload = e => {
             document.getElementById('sshKey').value = e.target.result.trim();
@@ -680,17 +684,19 @@
             zone.classList.add('success');
             addLog('SSH key loaded: ' + file.name, 'success');
         };
+        reader.onerror = () => addLog('Failed to read SSH file', 'error');
         reader.readAsText(file);
+        fileInput.value = '';
     }
 
     document.getElementById('sshZone').addEventListener('dblclick', function(e) {
-        if (e.target.tagName === 'INPUT') return;
+        e.preventDefault();
         document.getElementById('sshKey').value = '';
         this.classList.remove('success');
         document.getElementById('sshZoneContent').innerHTML =
             '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;">' +
             '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' +
-            '<div style="font-size:12px;color:var(--text-muted);">Click or drop .pub, .txt file</div>';
+            '<div style="font-size:12px;color:var(--text-muted);">Click to upload .pub or .txt</div>';
         document.getElementById('sshFile').value = '';
         addLog('SSH key cleared', 'warn');
     });
@@ -1305,3 +1311,162 @@
             addLog('Bulk delete error: ' + err.message, 'error');
         }
     }
+
+    async function startLoop() {
+        const image = document.getElementById('imageSelect').value;
+        const ssh = document.getElementById('sshKey').value.trim();
+        const user = document.getElementById('cfgUser').value;
+        const key = document.getElementById('cfgKey').value;
+        if (!user || !key) { addLog('Error: Credentials required', 'error'); return; }
+        if (!image) { addLog('Error: Select an OS image first', 'error'); return; }
+        if (!ssh) { addLog('Error: SSH public key required', 'error'); return; }
+        const payload = {
+            user: user, tenancy: document.getElementById('cfgTenancy').value,
+            fingerprint: document.getElementById('cfgFingerprint').value,
+            region: document.getElementById('cfgRegion').value,
+            private_key: key, shape: document.getElementById('shapeSelect').value,
+            image_id: image, subnet_id: document.getElementById('subnetSelect').value,
+            ad_preference: document.getElementById('adSelect').value,
+            display_name: document.getElementById('vmName').value,
+            ocpus: document.getElementById('ocpus').value,
+            memory: document.getElementById('memory').value,
+            boot_volume_gb: document.getElementById('bootVol').value,
+            ssh_key: ssh,
+            telegram_bot_token: document.getElementById('tgToken').value.trim(),
+            telegram_chat_id: document.getElementById('tgChat').value.trim(),
+            telegram_live_log: document.getElementById('tgLiveLog').checked,
+            retry_delay: parseInt(document.getElementById('retryDelay').value) || 60,
+            randomize_delay: delayMode === 'random',
+            random_min: 25, random_max: 60,
+            timezone: userTimezone
+        };
+        try {
+            const res = await fetch('/api/auto-launch-loop', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                updateStatus(true);
+                addLog('Provisioning loop started', 'success');
+                startPolling();
+            } else {
+                addLog('Failed: ' + data.error, 'error');
+            }
+        } catch (err) {
+            addLog('Request error: ' + err.message, 'error');
+        }
+    }
+
+    async function stopLoop() {
+        try {
+            const res = await fetch('/api/stop-loop', { method: 'POST' });
+            const data = await res.json();
+            addLog(data.message, 'warn');
+            updateStatus(false);
+            stopPolling();
+        } catch (err) {
+            addLog('Stop error: ' + err.message, 'error');
+        }
+    }
+
+    async function fetchLogs() {
+        try {
+            const res = await fetch('/api/logs?offset=' + logOffset);
+            const data = await res.json();
+            if (data.logs && data.logs.length > 0) {
+                const term = document.getElementById('terminalBody');
+                data.logs.forEach(line => {
+                    const div = document.createElement('div');
+                    div.className = 'log-line';
+                    div.textContent = line;
+                    term.appendChild(div);
+                });
+                logOffset = data.next_offset;
+                term.scrollTop = term.scrollHeight;
+            }
+        } catch (e) {}
+    }
+
+    async function checkStatus() {
+        try {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+            if (data.success) {
+                updateStatus(data.running);
+                if (data.running && !pollInterval) startPolling();
+                if (!data.running && pollInterval) stopPolling();
+            }
+        } catch (e) {}
+    }
+
+    function startPolling() {
+        if (pollInterval) return;
+        pollInterval = setInterval(fetchLogs, 2000);
+        statusInterval = setInterval(checkStatus, 5000);
+    }
+
+    function stopPolling() {
+        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+        if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+    }
+
+    function onTgLiveLogChange() {
+        document.getElementById('tgLiveWarning').style.display = document.getElementById('tgLiveLog').checked ? 'block' : 'none';
+    }
+
+    function onAllOSChange() {
+        document.getElementById('imageSelect').innerHTML = '<option value="">-- Scan images --</option>';
+    }
+
+    function clearAll() {
+        if (isRunning) { addLog('Stop the provisioning loop before clearing', 'warn'); return; }
+        document.getElementById('rawConfig').value = '';
+        document.getElementById('cfgUser').value = '';
+        document.getElementById('cfgTenancy').value = '';
+        document.getElementById('cfgFingerprint').value = '';
+        document.getElementById('cfgRegion').value = '';
+        document.getElementById('cfgKey').value = '';
+        document.getElementById('keyZone').classList.remove('success');
+        document.getElementById('keyZoneContent').innerHTML =
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;">' +
+            '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' +
+            '<div style="font-size:12px;color:var(--text-muted);">Click to upload .pem, .txt, or .key</div>';
+        document.getElementById('keyFile').value = '';
+        document.getElementById('imageSelect').innerHTML = '<option value="">-- Scan images first --</option>';
+        document.getElementById('subnetSelect').innerHTML = '<option value="">-- Auto-select first available --</option>';
+        document.getElementById('subnetInfo').style.display = 'none';
+        document.getElementById('vnicSelect').innerHTML = '<option value="">-- Scan VNICs first --</option>';
+        document.getElementById('vnicInfo').style.display = 'none';
+        document.getElementById('vmName').value = 'Arm';
+        document.getElementById('ocpus').value = '2';
+        document.getElementById('memory').value = '12';
+        document.getElementById('bootVol').value = '50';
+        document.getElementById('sshKey').value = '';
+        document.getElementById('sshZone').classList.remove('success');
+        document.getElementById('sshZoneContent').innerHTML =
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;">' +
+            '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' +
+            '<div style="font-size:12px;color:var(--text-muted);">Click to upload .pub or .txt</div>';
+        document.getElementById('sshFile').value = '';
+        document.getElementById('tgToken').value = '';
+        document.getElementById('tgChat').value = '';
+        document.getElementById('tgLiveLog').checked = false;
+        document.getElementById('tgLiveWarning').style.display = 'none';
+        document.getElementById('tgResult').innerHTML = '';
+        document.getElementById('quotaPanel').style.display = 'none';
+        document.getElementById('quotaPanel').innerHTML = '';
+        document.getElementById('shapeInfo').style.display = 'none';
+        document.getElementById('shapeInfo').innerHTML = '';
+        clearLogs();
+        addLog('All fields cleared', 'success');
+    }
+
+    window.addEventListener('load', () => {
+        fetchLogs();
+        checkStatus();
+        setInterval(checkStatus, 5000);
+    });
+    </script>
+</body>
+</html>
