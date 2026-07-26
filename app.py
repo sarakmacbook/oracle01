@@ -755,22 +755,40 @@ def get_instance_public_ip(config, compute_client, network_client, instance_id):
         return None, str(e)
 
 
-def list_all_instances(config, compute_client, identity_client):
+def list_all_instances(config, compute_client, identity_client, network_client=None):
     tenancy = config['tenancy']
     instances = compute_client.list_instances(compartment_id=tenancy).data
     result = []
+    # Create network client if not provided
+    if network_client is None:
+        network_client = oci.core.VirtualNetworkClient(config)
     for inst in instances:
         if inst.lifecycle_state in ('TERMINATED', 'TERMINATING'):
             continue
         shape = inst.shape
         ocpus = None
         memory = None
+        public_ip = None
         if hasattr(inst, 'shape_config') and inst.shape_config:
             ocpus = inst.shape_config.ocpus
             memory = inst.shape_config.memory_in_gbs
+        # Try to get public IP from VNIC attachments
+        try:
+            attachments = compute_client.list_vnic_attachments(
+                compartment_id=tenancy, instance_id=inst.id
+            ).data
+            for att in attachments:
+                if getattr(att, 'lifecycle_state', '') == 'ATTACHED':
+                    vnic = network_client.get_vnic(vnic_id=att.vnic_id).data
+                    if vnic.public_ip:
+                        public_ip = vnic.public_ip
+                        break
+        except Exception:
+            pass
         result.append({
             'id': inst.id, 'name': inst.display_name, 'shape': shape,
             'state': inst.lifecycle_state, 'ocpus': ocpus, 'memory': memory,
+            'public_ip': public_ip,
             'time_created': inst.time_created.isoformat() if inst.time_created else None,
             'availability_domain': inst.availability_domain
         })
@@ -787,6 +805,7 @@ def terminate_instance(compute_client, instance_id):
 
 def get_free_tier_usage(config, compute_client, block_client, identity_client):
     tenancy = config['tenancy']
+    network_client = oci.core.VirtualNetworkClient(config)
     ads = identity_client.list_availability_domains(compartment_id=tenancy).data
     total_storage = 0
     for ad in ads:
@@ -810,7 +829,7 @@ def get_free_tier_usage(config, compute_client, block_client, identity_client):
                 arm_instances.append({'name': inst.display_name, 'ocpus': ocpus, 'memory': memory, 'state': inst.lifecycle_state})
     ocpus_remaining = max(0, 2 - total_ocpus)
     memory_remaining = max(0, 12 - total_memory)
-    all_instances = list_all_instances(config, compute_client, identity_client)
+    all_instances = list_all_instances(config, compute_client, identity_client, network_client)
     return {
         'storage': {'used_gb': total_storage, 'limit_gb': 200, 'remaining_gb': storage_remaining, 'percent': round((total_storage / 200) * 100, 1) if total_storage > 0 else 0},
         'micro': {'used': micro_count, 'limit': 2, 'remaining': micro_remaining, 'percent': round((micro_count / 2) * 100, 1) if micro_count > 0 else 0},
