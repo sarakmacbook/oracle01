@@ -853,6 +853,7 @@
                         html += '<div class="instance-name">' + inst.name + '</div>';
                         html += '<div class="instance-meta">' + ipLine + inst.shape + shapeInfo + ' | <span style="color:' + stateColor + '">' + inst.state + '</span></div>';
                         html += '</div>';
+                        html += '<button class="instance-delete" onclick="rebootInstance(' + "'" + inst.id + "'" + ',' + "'" + inst.name + "'" + ')" title="Reboot this instance" style="border-color:rgba(245,158,11,0.3);color:var(--warning);margin-right:4px;">&#8635;</button>';
                         html += '<button class="instance-delete" onclick="deleteInstance(' + "'" + inst.id + "'" + ',' + "'" + inst.name + "'" + ')" title="Delete this instance">&#128465;</button>';
                         html += '</div>';
                     });
@@ -1245,12 +1246,43 @@
         btn.disabled = false; btn.textContent = 'Test connection';
     }
 
+    async function rebootInstance(instanceId, instanceName) {
+        parseConfig();
+        const user = document.getElementById('cfgUser').value;
+        const key = document.getElementById('cfgKey').value;
+        if (!user || !key) { addLog('Error: Credentials required first', 'error'); return; }
+        if (!confirm('Reboot instance "' + instanceName + '"?')) {
+            addLog('Reboot cancelled', 'warn'); return;
+        }
+        addLog('Rebooting instance "' + instanceName + '"...', 'warn');
+        try {
+            const res = await fetch('/api/reboot-instance', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user: user, tenancy: document.getElementById('cfgTenancy').value,
+                    fingerprint: document.getElementById('cfgFingerprint').value,
+                    region: document.getElementById('cfgRegion').value,
+                    private_key: key, instance_id: instanceId, timezone: userTimezone
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                addLog('Rebooted: ' + data.message, 'success');
+                setTimeout(checkQuota, 3000);
+            } else {
+                addLog('Reboot failed: ' + data.error, 'error');
+            }
+        } catch (err) {
+            addLog('Reboot error: ' + err.message, 'error');
+        }
+    }
+
     async function deleteInstance(instanceId, instanceName) {
         parseConfig();
         const user = document.getElementById('cfgUser').value;
         const key = document.getElementById('cfgKey').value;
         if (!user || !key) { addLog('Error: Credentials required first', 'error'); return; }
-        const confirmMsg = 'DANGER: Delete instance "' + instanceName + '"?' + String.fromCharCode(10) + String.fromCharCode(10) + 'This action cannot be undone.';
+        const confirmMsg = 'DANGER: Delete instance "' + instanceName + '"?' + String.fromCharCode(10) + String.fromCharCode(10) + 'This action CANNOT be undone. The instance and all attached boot volumes will be permanently lost.' + String.fromCharCode(10) + String.fromCharCode(10) + 'Are you sure?';
         if (!confirm(confirmMsg)) {
             addLog('Delete cancelled', 'warn'); return;
         }
