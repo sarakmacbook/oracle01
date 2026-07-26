@@ -312,6 +312,31 @@
         }
         .tg-result { margin-top: 8px; font-size: 12px; }
         .hidden { display: none; }
+        .instance-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            background: var(--bg);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        .instance-info { overflow: hidden; flex: 1; }
+        .instance-name { color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .instance-meta { color: var(--text-muted); font-size: 11px; }
+        .instance-delete {
+            padding: 3px 8px;
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 4px;
+            background: transparent;
+            color: var(--danger);
+            font-size: 11px;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+        .instance-delete:hover { background: rgba(239,68,68,0.1); }
         @media (max-width: 560px) {
             .grid-2, .grid-3 { grid-template-columns: 1fr; }
             .action-bar { flex-direction: column; }
@@ -328,7 +353,7 @@
                 <p>Always free tier automation v2</p>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
-                <button onclick="clearAll()" style="padding:5px 12px;border:1px solid var(--border);border-radius:20px;background:var(--surface-raised);color:var(--text-muted);font-size:11px;font-weight:500;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.color='var(--danger)';this.style.borderColor='rgba(239,68,68,0.3)'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">Clear all</button>
+                <button onclick="clearAll()" style="padding:5px 12px;border:1px solid var(--border);border-radius:20px;background:var(--surface-raised);color:var(--text-muted);font-size:11px;font-weight:500;cursor:pointer;">Clear all</button>
                 <div id="statusBadge" class="status-badge stopped">
                     <span id="statusDot" class="status-dot"></span>
                     <span id="statusText">Stopped</span>
@@ -351,7 +376,7 @@
                         <label class="form-label" style="margin-bottom:0;">Raw config block</label>
                         <label style="position:relative;cursor:pointer;">
                             <input type="file" id="configFile" accept=".txt,.conf,.config" onchange="handleConfigFile()" style="position:absolute;opacity:0;width:0;height:0;">
-                            <span style="font-size:11px;color:var(--accent);font-weight:500;display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);transition:all 0.15s;" onmouseover="this.style.background='color-mix(in srgb,var(--accent) 8%,transparent)'" onmouseout="this.style.background='transparent'">
+                            <span style="font-size:11px;color:var(--accent);font-weight:500;display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                                 Upload .txt
                             </span>
@@ -366,13 +391,11 @@
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                         <div style="font-size:12px;color:var(--text-muted);">Drop .pem, .txt, or .key file</div>
                     </div>
-                    <div style="margin-top:6px;font-size:11px;color:var(--text-muted);text-align:center;">Double-click upload zone to replace file</div>
                 </div>
                 <div class="btn-row">
                     <button class="btn" id="quotaBtn" onclick="checkQuota()">Check free tier</button>
                     <button class="btn" id="scanBtn" onclick="scanImages()">Scan OS images</button>
                 </div>
-
                 <div id="quotaPanel" class="quota-panel"></div>
                 <div class="checkbox-row">
                     <input type="checkbox" id="allOS" onchange="onAllOSChange()">
@@ -386,16 +409,6 @@
                 </div>
                 <div class="form-group">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                        <label class="form-label" style="margin-bottom:0;">Target VNIC</label>
-                        <button class="btn" id="scanVnicBtn" onclick="scanVnics()" style="padding:3px 10px;font-size:11px;flex:none;">Scan VNICs</button>
-                    </div>
-                    <select id="vnicSelect" class="form-select">
-                        <option value="">-- Scan VNICs first --</option>
-                    </select>
-                    <div id="vnicInfo" style="margin-top:6px;font-size:11px;color:var(--text-muted);display:none;"></div>
-                </div>
-                <div class="form-group">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
                         <label class="form-label" style="margin-bottom:0;">Target subnet</label>
                         <button class="btn" id="scanSubnetBtn2" onclick="scanSubnets()" style="padding:3px 10px;font-size:11px;flex:none;">Scan subnets</button>
                     </div>
@@ -403,6 +416,16 @@
                         <option value="">-- Auto-select first available --</option>
                     </select>
                     <div id="subnetInfo" style="margin-top:6px;font-size:11px;color:var(--text-muted);display:none;"></div>
+                </div>
+                <div class="form-group">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                        <label class="form-label" style="margin-bottom:0;">Target VNIC</label>
+                        <button class="btn" id="scanVnicBtn" onclick="scanVnics()" style="padding:3px 10px;font-size:11px;flex:none;">Scan VNICs</button>
+                    </div>
+                    <select id="vnicSelect" class="form-select">
+                        <option value="">-- Scan VNICs first --</option>
+                    </select>
+                    <div id="vnicInfo" style="margin-top:6px;font-size:11px;color:var(--text-muted);display:none;"></div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Availability domain preference</label>
@@ -464,12 +487,10 @@
                         <input type="file" id="sshFile" accept=".pub,.txt" onchange="handleSSHFile()">
                         <span style="font-size:12px;color:var(--text-muted);">Upload .pub file or paste below</span>
                     </div>
-                    <div style="margin-top:6px;font-size:11px;color:var(--text-muted);text-align:center;">Double-click upload zone to replace file</div>
                     <textarea id="sshKey" class="form-textarea ssh-area" placeholder="ssh-rsa AAAAB3..."></textarea>
                 </div>
                 <div class="form-group" style="background:var(--surface-raised);padding:12px;border-radius:var(--radius-md);border:1px solid var(--border);">
                     <label class="form-label" style="color:var(--text-secondary);">Firewall / Security Rules</label>
-
                     <div style="display:flex;gap:8px;margin-bottom:10px;">
                         <div style="flex:1;">
                             <label style="font-size:11px;color:var(--text-muted);margin-bottom:4px;display:block;">Port(s) to open</label>
@@ -488,7 +509,6 @@
                             </select>
                         </div>
                     </div>
-
                     <div style="display:flex;gap:8px;">
                         <button class="btn" id="scanRulesBtn" onclick="scanSecurityRules()" style="flex:1;padding:8px 12px;font-size:12px;">Scan existing rules</button>
                         <button class="btn" id="openFirewallBtn" onclick="openFirewallNow()" style="flex:1;padding:8px 12px;font-size:12px;">Open port(s) now</button>
@@ -635,7 +655,7 @@
             '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;">' +
             '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' +
             '<div style="font-size:12px;color:var(--text-muted);">Drop .pem, .txt, or .key file</div>';
-        addLog('Private key cleared — upload a new one', 'warn');
+        addLog('Private key cleared', 'warn');
     });
 
     function handleSSHFile() {
@@ -657,7 +677,7 @@
         this.classList.remove('success');
         this.innerHTML = '<input type="file" id="sshFile" accept=".pub,.txt" onchange="handleSSHFile()">' +
             '<span style="font-size:12px;color:var(--text-muted);">Upload .pub file or paste below</span>';
-        addLog('SSH key cleared — upload a new one', 'warn');
+        addLog('SSH key cleared', 'warn');
     });
 
     function onShapeChange() {
@@ -668,26 +688,12 @@
         if (shape === 'VM.Standard.E2.1.Micro') {
             cpu.value = 1; cpu.disabled = true;
             ram.value = 1; ram.disabled = true;
-            vmName.value = getUniqueVmName('VM-AMD');
+            vmName.value = 'VM-AMD';
         } else {
             cpu.value = 2; cpu.disabled = false;
             ram.value = 12; ram.disabled = false;
-            vmName.value = getUniqueVmName('Arm');
+            vmName.value = 'Arm';
         }
-    }
-
-    function getUniqueVmName(base) {
-        const vmName = document.getElementById('vmName');
-        const current = vmName.value.trim();
-        if (current === base || current.startsWith(base + '-')) return current;
-        if (!current || current === 'Arm') return base;
-        const regex = new RegExp('^' + base + '(-(\d+))?$');
-        const match = current.match(regex);
-        if (match) {
-            const num = match[2] ? parseInt(match[2]) : 1;
-            return base + '-' + (num + 1);
-        }
-        return base;
     }
 
     async function setMaxBoot() {
@@ -696,47 +702,34 @@
         const input = document.getElementById('bootVol');
         const user = document.getElementById('cfgUser').value;
         const key = document.getElementById('cfgKey').value;
-
-        if (!user || !key) {
-            addLog('Error: Credentials required first', 'error');
-            return;
-        }
-
-        const oldText = btn.textContent;
-        btn.textContent = '...';
-        btn.disabled = true;
-
+        if (!user || !key) { addLog('Error: Credentials required first', 'error'); return; }
+        btn.textContent = '...'; btn.disabled = true;
         try {
             const res = await fetch('/api/free-tier-status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user: user,
-                    tenancy: document.getElementById('cfgTenancy').value,
+                    user: user, tenancy: document.getElementById('cfgTenancy').value,
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
-                    private_key: key,
-                    timezone: userTimezone
+                    private_key: key, timezone: userTimezone
                 })
             });
             const data = await res.json();
-
             if (data.success) {
                 const remaining = data.usage.storage.remaining_gb;
                 const maxBoot = Math.min(200, Math.max(50, remaining));
                 input.value = maxBoot;
                 btn.textContent = 'Max (' + maxBoot + ' GB)';
-                addLog('Max boot volume set to ' + maxBoot + ' GB (' + remaining + ' GB free)', 'success');
-                setTimeout(() => { btn.textContent = oldText; }, 3000);
+                addLog('Max boot volume set to ' + maxBoot + ' GB', 'success');
+                setTimeout(() => { btn.textContent = 'Max'; }, 3000);
             } else {
                 addLog('Could not detect storage: ' + data.error, 'error');
-                btn.textContent = oldText;
+                btn.textContent = 'Max';
             }
         } catch (err) {
             addLog('Request error: ' + err.message, 'error');
-            btn.textContent = oldText;
+            btn.textContent = 'Max';
         }
-
         btn.disabled = false;
     }
 
@@ -779,7 +772,6 @@
         const dot = document.getElementById('statusDot');
         const text = document.getElementById('statusText');
         const startBtn = document.getElementById('startBtn');
-
         if (running) {
             badge.className = 'status-badge running';
             dot.className = 'status-dot running';
@@ -801,32 +793,21 @@
         const panel = document.getElementById('quotaPanel');
         const user = document.getElementById('cfgUser').value;
         const key = document.getElementById('cfgKey').value;
-
-        if (!user || !key) {
-            addLog('Error: Credentials required first', 'error');
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = 'Scanning...';
+        if (!user || !key) { addLog('Error: Credentials required first', 'error'); return; }
+        btn.disabled = true; btn.textContent = 'Scanning...';
         panel.style.display = 'block';
         panel.innerHTML = '<div style="font-size:12px;color:var(--text-muted);">Fetching quota usage...</div>';
-
         try {
             const res = await fetch('/api/free-tier-status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user: user,
-                    tenancy: document.getElementById('cfgTenancy').value,
+                    user: user, tenancy: document.getElementById('cfgTenancy').value,
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
-                    private_key: key,
-                    timezone: userTimezone
+                    private_key: key, timezone: userTimezone
                 })
             });
             const data = await res.json();
-
             if (data.success) {
                 const u = data.usage;
                 let html = '';
@@ -836,8 +817,6 @@
                 html += '<div class="quota-item"><div class="quota-header"><span style="color:var(--text-secondary)">Micro instances</span><span style="color:var(--text);font-weight:500">' + u.micro.used + ' / ' + u.micro.limit + '</span></div><div class="quota-bar"><div class="quota-fill" style="width:' + u.micro.percent + '%;background:' + mColor + '"></div></div></div>';
                 const aColor = u.arm.ocpu_percent >= 100 ? 'var(--danger)' : u.arm.ocpu_percent >= 70 ? 'var(--warning)' : 'var(--positive)';
                 html += '<div class="quota-item"><div class="quota-header"><span style="color:var(--text-secondary)">ARM OCPUs</span><span style="color:var(--text);font-weight:500">' + u.arm.used_ocpus + ' / ' + u.arm.limit_ocpus + '</span></div><div class="quota-bar"><div class="quota-fill" style="width:' + u.arm.ocpu_percent + '%;background:' + aColor + '"></div></div></div>';
-
-                // Instance list
                 if (u.all_instances && u.all_instances.length > 0) {
                     html += '<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">';
                     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
@@ -847,21 +826,20 @@
                     u.all_instances.forEach(inst => {
                         const shapeInfo = inst.ocpus ? ' (' + inst.ocpus + ' OCPU, ' + inst.memory + ' GB)' : '';
                         const stateColor = inst.state === 'RUNNING' ? 'var(--positive)' : 'var(--warning)';
-                        html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--bg);border-radius:6px;margin-bottom:6px;font-size:12px;">';
-                        html += '<div style="overflow:hidden;">';
-                        html += '<div style="color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + inst.name + '</div>';
-                        html += '<div style="color:var(--text-muted);font-size:11px;">' + inst.shape + shapeInfo + ' | <span style="color:' + stateColor + '">' + inst.state + '</span></div>';
+                        html += '<div class="instance-row">';
+                        html += '<div class="instance-info">';
+                        html += '<div class="instance-name">' + inst.name + '</div>';
+                        html += '<div class="instance-meta">' + inst.shape + shapeInfo + ' | <span style="color:' + stateColor + '">' + inst.state + '</span></div>';
                         html += '</div>';
-                        html += '<button onclick="deleteInstance('' + inst.id + '', '' + inst.name + '')" style="padding:3px 8px;border:1px solid rgba(239,68,68,0.3);border-radius:4px;background:transparent;color:var(--danger);font-size:11px;cursor:pointer;flex-shrink:0;margin-left:8px;" title="Delete this instance">&#128465;</button>';
+                        html += '<button class="instance-delete" onclick="deleteInstance(' + "'" + inst.id + "'" + ',' + "'" + inst.name + "'" + ')" title="Delete this instance">&#128465;</button>';
                         html += '</div>';
                     });
                     html += '</div>';
                 } else {
                     html += '<div style="margin-top:12px;font-size:12px;color:var(--text-muted);">No instances found.</div>';
                 }
-
                 panel.innerHTML = html;
-                addLog('Free tier quota loaded — ' + (u.all_instances ? u.all_instances.length : 0) + ' instance(s)', 'success');
+                addLog('Free tier quota loaded', 'success');
             } else {
                 panel.innerHTML = '<div style="color:var(--danger);font-size:12px;">Error: ' + data.error + '</div>';
                 addLog('Quota check failed: ' + data.error, 'error');
@@ -870,9 +848,7 @@
             panel.innerHTML = '<div style="color:var(--danger);font-size:12px;">Request error: ' + err.message + '</div>';
             addLog('Quota request error: ' + err.message, 'error');
         }
-
-        btn.disabled = false;
-        btn.textContent = 'Check free tier';
+        btn.disabled = false; btn.textContent = 'Check free tier';
     }
 
     async function scanImages() {
@@ -881,33 +857,22 @@
         const select = document.getElementById('imageSelect');
         const user = document.getElementById('cfgUser').value;
         const key = document.getElementById('cfgKey').value;
-
-        if (!user || !key) {
-            addLog('Error: Credentials required first', 'error');
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = 'Scanning...';
+        if (!user || !key) { addLog('Error: Credentials required first', 'error'); return; }
+        btn.disabled = true; btn.textContent = 'Scanning...';
         select.innerHTML = '<option>Scanning...</option>';
-
         try {
             const res = await fetch('/api/list-images', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user: user,
-                    tenancy: document.getElementById('cfgTenancy').value,
+                    user: user, tenancy: document.getElementById('cfgTenancy').value,
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
-                    private_key: key,
-                    shape: document.getElementById('shapeSelect').value,
+                    private_key: key, shape: document.getElementById('shapeSelect').value,
                     all_os_mode: document.getElementById('allOS').checked,
                     timezone: userTimezone
                 })
             });
             const data = await res.json();
-
             if (data.success && data.images.length > 0) {
                 select.innerHTML = '';
                 data.images.forEach(img => {
@@ -925,9 +890,7 @@
             select.innerHTML = '<option value="">-- Error --</option>';
             addLog('Image scan error: ' + err.message, 'error');
         }
-
-        btn.disabled = false;
-        btn.textContent = 'Scan OS images';
+        btn.disabled = false; btn.textContent = 'Scan OS images';
     }
 
     async function scanSubnets() {
@@ -937,32 +900,20 @@
         const info = document.getElementById('subnetInfo');
         const user = document.getElementById('cfgUser').value;
         const key = document.getElementById('cfgKey').value;
-
-        if (!user || !key) {
-            addLog('Error: Credentials required first', 'error');
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = 'Scanning...';
-        select.innerHTML = '<option>Scanning...</option>';
-        info.style.display = 'none';
-
+        if (!user || !key) { addLog('Error: Credentials required first', 'error'); return; }
+        btn.disabled = true; btn.textContent = 'Scanning...';
+        select.innerHTML = '<option>Scanning...</option>'; info.style.display = 'none';
         try {
             const res = await fetch('/api/list-subnets', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user: user,
-                    tenancy: document.getElementById('cfgTenancy').value,
+                    user: user, tenancy: document.getElementById('cfgTenancy').value,
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
-                    private_key: key,
-                    timezone: userTimezone
+                    private_key: key, timezone: userTimezone
                 })
             });
             const data = await res.json();
-
             if (data.success && data.subnets.length > 0) {
                 select.innerHTML = '<option value="">-- Auto-select first available --</option>';
                 data.subnets.forEach(sn => {
@@ -985,58 +936,40 @@
             select.innerHTML = '<option value="">-- Error --</option>';
             addLog('Subnet scan error: ' + err.message, 'error');
         }
-
-        btn.disabled = false;
-        btn.textContent = 'Scan subnets';
+        btn.disabled = false; btn.textContent = 'Scan subnets';
     }
 
     async function scanVnics() {
         parseConfig();
-        var btn = document.getElementById('scanVnicBtn');
-        var user = document.getElementById('cfgUser').value;
-        var key = document.getElementById('cfgKey').value;
-        var subnetId = document.getElementById('subnetSelect').value;
-        var vnicSelect = document.getElementById('vnicSelect');
-        var vnicInfo = document.getElementById('vnicInfo');
-
-        if (!user || !key) {
-            addLog('Error: Credentials required first', 'error');
-            return;
-        }
-        if (!btn) {
-            addLog('Error: VNIC button not found', 'error');
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = 'Scanning...';
-
+        const btn = document.getElementById('scanVnicBtn');
+        const user = document.getElementById('cfgUser').value;
+        const key = document.getElementById('cfgKey').value;
+        const subnetId = document.getElementById('subnetSelect').value;
+        const vnicSelect = document.getElementById('vnicSelect');
+        const vnicInfo = document.getElementById('vnicInfo');
+        if (!user || !key) { addLog('Error: Credentials required first', 'error'); return; }
+        btn.disabled = true; btn.textContent = 'Scanning...';
         try {
-            var payload = {
-                user: user,
-                tenancy: document.getElementById('cfgTenancy').value,
+            const payload = {
+                user: user, tenancy: document.getElementById('cfgTenancy').value,
                 fingerprint: document.getElementById('cfgFingerprint').value,
                 region: document.getElementById('cfgRegion').value,
-                private_key: key,
-                timezone: userTimezone
+                private_key: key, timezone: userTimezone
             };
             if (subnetId) payload.subnet_id = subnetId;
-
-            var res = await fetch('/api/list-vnics', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({...payload, timezone: userTimezone})
+            const res = await fetch('/api/list-vnics', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
-            var data = await res.json();
-
+            const data = await res.json();
             if (data.success && data.vnics && data.vnics.length > 0) {
-                var filterLabel = data.filtered_by_subnet ? ' (target subnet)' : '';
+                const filterLabel = data.filtered_by_subnet ? ' (target subnet)' : '';
                 addLog('Found ' + data.vnics.length + ' VNIC(s)' + filterLabel + ':', 'success');
                 vnicSelect.innerHTML = '<option value="">-- Select a VNIC --</option>';
-                data.vnics.forEach(function(v) {
-                    var primaryBadge = v.is_primary ? ' [PRIMARY]' : '';
-                    addLog('  ' + v.display_name + primaryBadge + ' | Instance: ' + v.instance_name + ' | IP: ' + v.private_ip + ' | Public: ' + (v.public_ip || 'None') + ' | VCN: ' + v.vcn_name + ' | Subnet: ' + v.subnet_name + ' | State: ' + v.lifecycle_state);
-                    var opt = document.createElement('option');
+                data.vnics.forEach(v => {
+                    const primaryBadge = v.is_primary ? ' [PRIMARY]' : '';
+                    addLog('  ' + v.display_name + primaryBadge + ' | Instance: ' + v.instance_name + ' | IP: ' + v.private_ip + ' | Public: ' + (v.public_ip || 'None'));
+                    const opt = document.createElement('option');
                     opt.value = v.id;
                     opt.textContent = v.display_name + primaryBadge + ' (' + v.private_ip + ', ' + v.instance_name + ')';
                     vnicSelect.appendChild(opt);
@@ -1046,318 +979,67 @@
             } else if (data.success) {
                 vnicSelect.innerHTML = '<option value="">-- No VNICs found --</option>';
                 vnicInfo.style.display = 'none';
-                var msg = 'No VNICs found' + (data.filtered_by_subnet ? ' in target subnet' : ' (no running instances)');
-                addLog(msg, 'warn');
+                addLog('No VNICs found' + (data.filtered_by_subnet ? ' in target subnet' : ''), 'warn');
             } else {
                 vnicSelect.innerHTML = '<option value="">-- Error --</option>';
-                vnicInfo.style.display = 'none';
                 addLog('VNIC scan failed: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (err) {
             vnicSelect.innerHTML = '<option value="">-- Error --</option>';
-            vnicInfo.style.display = 'none';
             addLog('VNIC scan error: ' + err.message, 'error');
         }
-
-        btn.disabled = false;
-        btn.textContent = 'Scan VNICs';
+        btn.disabled = false; btn.textContent = 'Scan VNICs';
     }
 
-    async function openFirewallNow() {
+    async function scanShapes() {
         parseConfig();
-        var btn = document.getElementById('openFirewallBtn');
-        var result = document.getElementById('firewallResult');
-        var user = document.getElementById('cfgUser').value;
-        var key = document.getElementById('cfgKey').value;
-        var subnetId = document.getElementById('subnetSelect').value;
-        var ports = document.getElementById('firewallPorts').value.trim() || 'all';
-        var cidr = document.getElementById('firewallCidr').value.trim() || '0.0.0.0/0';
-        var direction = document.getElementById('firewallDirection').value;
-
-        if (!user || !key) {
-            addLog('Error: Credentials required first', 'error');
-            return;
-        }
-        if (!subnetId) {
-            addLog('Error: Select a subnet first (scan subnets)', 'error');
-            result.style.display = 'block';
-            result.innerHTML = '<span style="color:var(--warning)">Select a subnet first</span>';
-            return;
-        }
-
-        // Confirmation prompt
-        var dirLabel = direction === 'ingress' ? 'INBOUND' : direction === 'egress' ? 'OUTBOUND' : 'INBOUND + OUTBOUND';
-        var confirmMsg = 'Really?\n\nOpen ' + ports + ' ' + dirLabel + ' from ' + cidr + ' to the public internet?';
-        if (!confirm(confirmMsg)) {
-            addLog('Firewall action cancelled by user', 'warn');
-            result.style.display = 'block';
-            result.innerHTML = '<span style="color:var(--warning)">Action cancelled</span>';
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = 'Opening...';
-        result.style.display = 'none';
-
-        try {
-            var res = await fetch('/api/open-firewall', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user: user,
-                    tenancy: document.getElementById('cfgTenancy').value,
-                    fingerprint: document.getElementById('cfgFingerprint').value,
-                    region: document.getElementById('cfgRegion').value,
-                    private_key: key,
-                    subnet_id: subnetId,
-                    ports: ports,
-                    cidr: cidr,
-                    direction: direction,
-                    timezone: userTimezone
-                })
-            });
-            var data = await res.json();
-
-            result.style.display = 'block';
-            if (data.success) {
-                if (data.already_open) {
-                    result.innerHTML = '<span style="color:var(--positive)">Rule(s) already exist for ' + data.ports + ' from ' + data.cidr + '</span>';
-                    addLog('Firewall rules already exist', 'success');
-                } else {
-                    result.innerHTML = '<span style="color:var(--positive)">Opened ' + data.ports + ' (' + data.direction + ') from ' + data.cidr + ' via ' + data.method + ' (' + data.rules_added + ' rule(s))</span>';
-                    addLog('Opened port(s) ' + data.ports + ' (' + data.direction + ') from ' + data.cidr + ' via ' + data.method, 'success');
-                }
-            } else {
-                result.innerHTML = '<span style="color:var(--danger)">Failed: ' + data.error + '</span>';
-                addLog('Firewall open failed: ' + data.error, 'error');
-            }
-        } catch (err) {
-            result.style.display = 'block';
-            result.innerHTML = '<span style="color:var(--danger)">Error: ' + err.message + '</span>';
-            addLog('Firewall request error: ' + err.message, 'error');
-        }
-
-        btn.disabled = false;
-        btn.textContent = 'Open port(s) now';
-    }
-
-    async function scanSecurityRules() {
-        parseConfig();
-        var btn = document.getElementById('scanRulesBtn');
-        var result = document.getElementById('firewallResult');
-        var user = document.getElementById('cfgUser').value;
-        var key = document.getElementById('cfgKey').value;
-        var subnetId = document.getElementById('subnetSelect').value;
-
-        if (!user || !key) {
-            addLog('Error: Credentials required first', 'error');
-            return;
-        }
-        if (!subnetId) {
-            addLog('Error: Select a subnet first (scan subnets)', 'error');
-            result.style.display = 'block';
-            result.innerHTML = '<span style="color:var(--warning)">Select a subnet first</span>';
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = 'Scanning...';
-        result.style.display = 'none';
-
-        try {
-            var res = await fetch('/api/scan-security-rules', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user: user,
-                    tenancy: document.getElementById('cfgTenancy').value,
-                    fingerprint: document.getElementById('cfgFingerprint').value,
-                    region: document.getElementById('cfgRegion').value,
-                    private_key: key,
-                    subnet_id: subnetId,
-                    timezone: userTimezone
-                })
-            });
-            var data = await res.json();
-
-            result.style.display = 'block';
-            if (data.success) {
-                if (data.rules.length === 0) {
-                    result.innerHTML = '<span style="color:var(--warning)">No ingress rules found. Your subnet is completely closed.</span>';
-                    addLog('No security rules found — subnet is locked down', 'warn');
-                } else {
-                    var html = '<div style="color:var(--text-secondary);margin-bottom:4px;">Found ' + data.rules.length + ' rule(s):</div>';
-                    data.rules.forEach(function(r) {
-                        var port = r.port_range ? 'port ' + r.port_range : 'all ports';
-                        html += '<div style="color:var(--text-muted);padding:2px 0;">• ' + r.type + ' | ' + r.direction + ' | ' + r.protocol + ' | ' + r.source + ' | ' + port + '</div>';
-                    });
-                    result.innerHTML = html;
-                    addLog('Scanned ' + data.rules.length + ' security rule(s)', 'success');
-                }
-            } else {
-                result.innerHTML = '<span style="color:var(--danger)">Failed: ' + data.error + '</span>';
-                addLog('Security rule scan failed: ' + data.error, 'error');
-            }
-        } catch (err) {
-            result.style.display = 'block';
-            result.innerHTML = '<span style="color:var(--danger)">Error: ' + err.message + '</span>';
-            addLog('Security rule scan error: ' + err.message, 'error');
-        }
-
-        btn.disabled = false;
-        btn.textContent = 'Scan existing rules';
-    }
-
-    function onAllOSChange() {
-        document.getElementById('imageSelect').innerHTML = '<option value="">-- Scan images --</option>';
-    }
-
-    async function testTelegram() {
-        const btn = document.getElementById('tgTestBtn');
-        const result = document.getElementById('tgResult');
-        const token = document.getElementById('tgToken').value.trim();
-        const chat = document.getElementById('tgChat').value.trim();
-
-        if (!token || !chat) {
-            result.innerHTML = '<span style="color:var(--warning)">Fill both fields first</span>';
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = 'Testing...';
-
-        try {
-            const res = await fetch('/api/test-telegram', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bot_token: token, chat_id: chat, timezone: userTimezone })
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                result.innerHTML = '<span style="color:var(--positive)">Connected! Test message sent.</span>';
-                addLog('Telegram alerts configured', 'success');
-            } else {
-                result.innerHTML = '<span style="color:var(--danger)">Failed: ' + data.error + '</span>';
-            }
-        } catch (err) {
-            result.innerHTML = '<span style="color:var(--danger)">Error: ' + err.message + '</span>';
-        }
-
-        btn.disabled = false;
-        btn.textContent = 'Test connection';
-    }
-
-    async function startLoop() {
-        const image = document.getElementById('imageSelect').value;
-        const ssh = document.getElementById('sshKey').value.trim();
+        const btn = document.getElementById('scanShapeBtn');
+        const select = document.getElementById('shapeSelect');
+        const info = document.getElementById('shapeInfo');
         const user = document.getElementById('cfgUser').value;
         const key = document.getElementById('cfgKey').value;
-
-        if (!user || !key) { addLog('Error: Credentials required', 'error'); return; }
-        if (!image) { addLog('Error: Select an OS image first', 'error'); return; }
-        if (!ssh) { addLog('Error: SSH public key required', 'error'); return; }
-
-        const payload = {
-            user: user,
-            tenancy: document.getElementById('cfgTenancy').value,
-            fingerprint: document.getElementById('cfgFingerprint').value,
-            region: document.getElementById('cfgRegion').value,
-            private_key: key,
-            shape: document.getElementById('shapeSelect').value,
-            image_id: image,
-            subnet_id: document.getElementById('subnetSelect').value,
-            ad_preference: document.getElementById('adSelect').value,
-            display_name: document.getElementById('vmName').value,
-            ocpus: document.getElementById('ocpus').value,
-            memory: document.getElementById('memory').value,
-            boot_volume_gb: document.getElementById('bootVol').value,
-            ssh_key: ssh,
-            telegram_bot_token: document.getElementById('tgToken').value.trim(),
-            telegram_chat_id: document.getElementById('tgChat').value.trim(),
-            telegram_live_log: document.getElementById('tgLiveLog').checked,
-            retry_delay: parseInt(document.getElementById('retryDelay').value) || 60,
-            randomize_delay: delayMode === 'random',
-            random_min: 25,
-            random_max: 60
-        };
-
+        if (!user || !key) { addLog('Error: Credentials required first', 'error'); return; }
+        btn.disabled = true; btn.textContent = 'Scanning...';
+        select.innerHTML = '<option>Scanning...</option>'; info.style.display = 'none';
         try {
-            const res = await fetch('/api/auto-launch-loop', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({...payload, timezone: userTimezone})
+            const res = await fetch('/api/list-shapes', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user: user, tenancy: document.getElementById('cfgTenancy').value,
+                    fingerprint: document.getElementById('cfgFingerprint').value,
+                    region: document.getElementById('cfgRegion').value,
+                    private_key: key, timezone: userTimezone
+                })
             });
             const data = await res.json();
-
-            if (data.success) {
-                updateStatus(true);
-                addLog('Provisioning loop started', 'success');
-                startPolling();
-            } else {
-                addLog('Failed: ' + data.error, 'error');
-            }
-        } catch (err) {
-            addLog('Request error: ' + err.message, 'error');
-        }
-    }
-
-    async function stopLoop() {
-        try {
-            const res = await fetch('/api/stop-loop', { method: 'POST' });
-            const data = await res.json();
-            addLog(data.message, 'warn');
-            updateStatus(false);
-            stopPolling();
-        } catch (err) {
-            addLog('Stop error: ' + err.message, 'error');
-        }
-    }
-
-    async function fetchLogs() {
-        try {
-            const res = await fetch('/api/logs?offset=' + logOffset);
-            const data = await res.json();
-            if (data.logs && data.logs.length > 0) {
-                const term = document.getElementById('terminalBody');
-                data.logs.forEach(line => {
-                    const div = document.createElement('div');
-                    div.className = 'log-line';
-                    div.textContent = line;
-                    term.appendChild(div);
+            if (data.success && data.shapes.length > 0) {
+                select.innerHTML = '';
+                let freeCount = 0;
+                data.shapes.forEach(sh => {
+                    const opt = document.createElement('option');
+                    opt.value = sh.name;
+                    const isFree = sh.name === 'VM.Standard.A1.Flex' || sh.name === 'VM.Standard.E2.1.Micro';
+                    const freeTag = isFree ? ' [FREE TIER]' : '';
+                    const flexTag = sh.is_flex ? ' (Flex)' : '';
+                    const cpuMem = (sh.ocpus && sh.memory) ? ' - ' + sh.ocpus + ' OCPU, ' + sh.memory + ' GB' : '';
+                    const proc = sh.processor ? ' | ' + sh.processor : '';
+                    opt.textContent = sh.name + freeTag + flexTag + cpuMem + proc;
+                    select.appendChild(opt);
+                    if (isFree) freeCount++;
                 });
-                logOffset = data.next_offset;
-                term.scrollTop = term.scrollHeight;
+                info.innerHTML = 'Found ' + data.shapes.length + ' shape(s) across ' + data.ad_count + ' AD(s). ' + freeCount + ' free tier.';
+                info.style.display = 'block';
+                addLog('Found ' + data.shapes.length + ' shape(s) (' + freeCount + ' free tier)', 'success');
+                onShapeChange();
+            } else {
+                select.innerHTML = '<option value="VM.Standard.A1.Flex">Ampere A1 Flex (ARM)</option><option value="VM.Standard.E2.1.Micro">AMD E2 Micro</option>';
+                addLog('No shapes found: ' + (data.error || 'None available'), 'warn');
             }
-        } catch (e) {}
-    }
-
-    async function checkStatus() {
-        try {
-            const res = await fetch('/api/status');
-            const data = await res.json();
-            if (data.success) {
-                updateStatus(data.running);
-                if (data.running && !pollInterval) startPolling();
-                if (!data.running && pollInterval) stopPolling();
-            }
-        } catch (e) {}
-    }
-
-    function startPolling() {
-        if (pollInterval) return;
-        pollInterval = setInterval(fetchLogs, 2000);
-        statusInterval = setInterval(checkStatus, 5000);
-    }
-
-    function stopPolling() {
-        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-        if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
-    }
-
-    function onTgLiveLogChange() {
-        var checked = document.getElementById('tgLiveLog').checked;
-        document.getElementById('tgLiveWarning').style.display = checked ? 'block' : 'none';
+        } catch (err) {
+            select.innerHTML = '<option value="VM.Standard.A1.Flex">Ampere A1 Flex (ARM)</option><option value="VM.Standard.E2.1.Micro">AMD E2 Micro</option>';
+            addLog('Shape scan error: ' + err.message, 'error');
+        }
+        btn.disabled = false; btn.textContent = 'Scan shapes';
     }
 
     async function createSubnet() {
@@ -1367,31 +1049,20 @@
         const select = document.getElementById('subnetSelect');
         const user = document.getElementById('cfgUser').value;
         const key = document.getElementById('cfgKey').value;
-
-        if (!user || !key) {
-            addLog('Error: Credentials required first', 'error');
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = 'Creating...';
+        if (!user || !key) { addLog('Error: Credentials required first', 'error'); return; }
+        btn.disabled = true; btn.textContent = 'Creating...';
         addLog('Creating subnet via OCI API...', 'info');
-
         try {
             const res = await fetch('/api/create-subnet', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user: user,
-                    tenancy: document.getElementById('cfgTenancy').value,
+                    user: user, tenancy: document.getElementById('cfgTenancy').value,
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
-                    private_key: key,
-                    timezone: userTimezone
+                    private_key: key, timezone: userTimezone
                 })
             });
             const data = await res.json();
-
             if (data.success) {
                 select.innerHTML = '';
                 const opt = document.createElement('option');
@@ -1399,7 +1070,6 @@
                 const pub = data.subnet.public ? 'Public' : 'Private';
                 opt.textContent = data.subnet.name + ' (' + data.subnet.cidr + ', ' + pub + ', ' + data.subnet.ad + ')';
                 select.appendChild(opt);
-
                 if (data.created) {
                     info.innerHTML = '<span style="color:var(--positive)">Created subnet: ' + data.subnet.name + ' (' + data.subnet.cidr + ')</span>';
                     addLog('Subnet created: ' + data.subnet.name + ' (' + data.subnet.cidr + ')', 'success');
@@ -1418,110 +1088,162 @@
             info.style.display = 'block';
             addLog('Subnet creation error: ' + err.message, 'error');
         }
-
-        btn.disabled = false;
-        btn.textContent = 'Create subnet';
+        btn.disabled = false; btn.textContent = 'Create subnet';
     }
 
-    async function scanShapes() {
+    async function openFirewallNow() {
         parseConfig();
-        const btn = document.getElementById('scanShapeBtn');
-        const select = document.getElementById('shapeSelect');
-        const info = document.getElementById('shapeInfo');
+        const btn = document.getElementById('openFirewallBtn');
+        const result = document.getElementById('firewallResult');
         const user = document.getElementById('cfgUser').value;
         const key = document.getElementById('cfgKey').value;
-
-        if (!user || !key) {
-            addLog('Error: Credentials required first', 'error');
+        const subnetId = document.getElementById('subnetSelect').value;
+        const ports = document.getElementById('firewallPorts').value.trim() || 'all';
+        const cidr = document.getElementById('firewallCidr').value.trim() || '0.0.0.0/0';
+        const direction = document.getElementById('firewallDirection').value;
+        if (!user || !key) { addLog('Error: Credentials required first', 'error'); return; }
+        if (!subnetId) {
+            addLog('Error: Select a subnet first', 'error');
+            result.style.display = 'block';
+            result.innerHTML = '<span style="color:var(--warning)">Select a subnet first</span>';
             return;
         }
-
-        btn.disabled = true;
-        btn.textContent = 'Scanning...';
-        select.innerHTML = '<option>Scanning...</option>';
-        info.style.display = 'none';
-
+        const dirLabel = direction === 'ingress' ? 'INBOUND' : direction === 'egress' ? 'OUTBOUND' : 'BOTH';
+        if (!confirm('Open ' + ports + ' ' + dirLabel + ' from ' + cidr + '?')) {
+            addLog('Firewall action cancelled', 'warn'); return;
+        }
+        btn.disabled = true; btn.textContent = 'Opening...'; result.style.display = 'none';
         try {
-            const res = await fetch('/api/list-shapes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const res = await fetch('/api/open-firewall', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user: user,
-                    tenancy: document.getElementById('cfgTenancy').value,
+                    user: user, tenancy: document.getElementById('cfgTenancy').value,
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
-                    private_key: key,
-                    timezone: userTimezone
+                    private_key: key, subnet_id: subnetId, ports: ports, cidr: cidr,
+                    direction: direction, timezone: userTimezone
                 })
             });
             const data = await res.json();
-
-            if (data.success && data.shapes.length > 0) {
-                select.innerHTML = '';
-                let freeCount = 0;
-                data.shapes.forEach(sh => {
-                    const opt = document.createElement('option');
-                    opt.value = sh.name;
-                    const isFree = sh.name === 'VM.Standard.A1.Flex' || sh.name === 'VM.Standard.E2.1.Micro';
-                    const freeTag = isFree ? ' [FREE TIER]' : '';
-                    const flexTag = sh.is_flex ? ' (Flex)' : '';
-                    const cpuMem = (sh.ocpus && sh.memory) ? ' — ' + sh.ocpus + ' OCPU, ' + sh.memory + ' GB' : '';
-                    const proc = sh.processor ? ' | ' + sh.processor : '';
-                    opt.textContent = sh.name + freeTag + flexTag + cpuMem + proc;
-                    select.appendChild(opt);
-                    if (isFree) freeCount++;
-                });
-                info.innerHTML = 'Found ' + data.shapes.length + ' shape(s) across ' + data.ad_count + ' AD(s). ' + freeCount + ' free tier.';
-                info.style.display = 'block';
-                addLog('Found ' + data.shapes.length + ' shape(s) (' + freeCount + ' free tier)', 'success');
-                onShapeChange();
+            result.style.display = 'block';
+            if (data.success) {
+                if (data.already_open) {
+                    result.innerHTML = '<span style="color:var(--positive)">Rule(s) already exist for ' + data.ports + ' from ' + data.cidr + '</span>';
+                } else {
+                    result.innerHTML = '<span style="color:var(--positive)">Opened ' + data.ports + ' (' + data.direction + ') from ' + data.cidr + ' via ' + data.method + ' (' + data.rules_added + ' rule(s))</span>';
+                    addLog('Opened port(s) ' + data.ports + ' via ' + data.method, 'success');
+                }
             } else {
-                select.innerHTML = '<option value="VM.Standard.A1.Flex">Ampere A1 Flex (ARM)</option><option value="VM.Standard.E2.1.Micro">AMD E2 Micro</option>';
-                addLog('No shapes found: ' + (data.error || 'None available'), 'warn');
+                result.innerHTML = '<span style="color:var(--danger)">Failed: ' + data.error + '</span>';
+                addLog('Firewall open failed: ' + data.error, 'error');
             }
         } catch (err) {
-            select.innerHTML = '<option value="VM.Standard.A1.Flex">Ampere A1 Flex (ARM)</option><option value="VM.Standard.E2.1.Micro">AMD E2 Micro</option>';
-            addLog('Shape scan error: ' + err.message, 'error');
+            result.style.display = 'block';
+            result.innerHTML = '<span style="color:var(--danger)">Error: ' + err.message + '</span>';
+            addLog('Firewall request error: ' + err.message, 'error');
         }
+        btn.disabled = false; btn.textContent = 'Open port(s) now';
+    }
 
-        btn.disabled = false;
-        btn.textContent = 'Scan shapes';
+    async function scanSecurityRules() {
+        parseConfig();
+        const btn = document.getElementById('scanRulesBtn');
+        const result = document.getElementById('firewallResult');
+        const user = document.getElementById('cfgUser').value;
+        const key = document.getElementById('cfgKey').value;
+        const subnetId = document.getElementById('subnetSelect').value;
+        if (!user || !key) { addLog('Error: Credentials required first', 'error'); return; }
+        if (!subnetId) {
+            addLog('Error: Select a subnet first', 'error');
+            result.style.display = 'block';
+            result.innerHTML = '<span style="color:var(--warning)">Select a subnet first</span>';
+            return;
+        }
+        btn.disabled = true; btn.textContent = 'Scanning...'; result.style.display = 'none';
+        try {
+            const res = await fetch('/api/scan-security-rules', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user: user, tenancy: document.getElementById('cfgTenancy').value,
+                    fingerprint: document.getElementById('cfgFingerprint').value,
+                    region: document.getElementById('cfgRegion').value,
+                    private_key: key, subnet_id: subnetId, timezone: userTimezone
+                })
+            });
+            const data = await res.json();
+            result.style.display = 'block';
+            if (data.success) {
+                if (data.rules.length === 0) {
+                    result.innerHTML = '<span style="color:var(--warning)">No rules found. Subnet is locked down.</span>';
+                } else {
+                    let html = '<div style="color:var(--text-secondary);margin-bottom:4px;">Found ' + data.rules.length + ' rule(s):</div>';
+                    data.rules.forEach(r => {
+                        const port = r.port_range ? 'port ' + r.port_range : 'all ports';
+                        html += '<div style="color:var(--text-muted);padding:2px 0;">- ' + r.type + ' | ' + r.direction + ' | ' + r.protocol + ' | ' + port + '</div>';
+                    });
+                    result.innerHTML = html;
+                    addLog('Scanned ' + data.rules.length + ' security rule(s)', 'success');
+                }
+            } else {
+                result.innerHTML = '<span style="color:var(--danger)">Failed: ' + data.error + '</span>';
+            }
+        } catch (err) {
+            result.style.display = 'block';
+            result.innerHTML = '<span style="color:var(--danger)">Error: ' + err.message + '</span>';
+            addLog('Security rule scan error: ' + err.message, 'error');
+        }
+        btn.disabled = false; btn.textContent = 'Scan existing rules';
+    }
+
+    async function testTelegram() {
+        const btn = document.getElementById('tgTestBtn');
+        const result = document.getElementById('tgResult');
+        const token = document.getElementById('tgToken').value.trim();
+        const chat = document.getElementById('tgChat').value.trim();
+        if (!token || !chat) {
+            result.innerHTML = '<span style="color:var(--warning)">Fill both fields first</span>';
+            return;
+        }
+        btn.disabled = true; btn.textContent = 'Testing...';
+        try {
+            const res = await fetch('/api/test-telegram', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bot_token: token, chat_id: chat, timezone: userTimezone })
+            });
+            const data = await res.json();
+            if (data.success) {
+                result.innerHTML = '<span style="color:var(--positive)">Connected! Test message sent.</span>';
+                addLog('Telegram alerts configured', 'success');
+            } else {
+                result.innerHTML = '<span style="color:var(--danger)">Failed: ' + data.error + '</span>';
+            }
+        } catch (err) {
+            result.innerHTML = '<span style="color:var(--danger)">Error: ' + err.message + '</span>';
+        }
+        btn.disabled = false; btn.textContent = 'Test connection';
     }
 
     async function deleteInstance(instanceId, instanceName) {
         parseConfig();
         const user = document.getElementById('cfgUser').value;
         const key = document.getElementById('cfgKey').value;
-
-        if (!user || !key) {
-            addLog('Error: Credentials required first', 'error');
-            return;
-        }
-
-        const confirmMsg = 'DANGER: Delete instance "' + instanceName + '"?\n\nThis action cannot be undone.';
+        if (!user || !key) { addLog('Error: Credentials required first', 'error'); return; }
+        const confirmMsg = 'DANGER: Delete instance "' + instanceName + '"?' + String.fromCharCode(10) + String.fromCharCode(10) + 'This action cannot be undone.';
         if (!confirm(confirmMsg)) {
-            addLog('Delete cancelled', 'warn');
-            return;
+            addLog('Delete cancelled', 'warn'); return;
         }
-
         addLog('Deleting instance "' + instanceName + '"...', 'warn');
-
         try {
             const res = await fetch('/api/delete-instance', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user: user,
-                    tenancy: document.getElementById('cfgTenancy').value,
+                    user: user, tenancy: document.getElementById('cfgTenancy').value,
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
-                    private_key: key,
-                    instance_id: instanceId,
-                    timezone: userTimezone
+                    private_key: key, instance_id: instanceId, timezone: userTimezone
                 })
             });
             const data = await res.json();
-
             if (data.success) {
                 addLog('Deleted: ' + data.message, 'success');
                 setTimeout(checkQuota, 2000);
@@ -1537,40 +1259,28 @@
         parseConfig();
         const user = document.getElementById('cfgUser').value;
         const key = document.getElementById('cfgKey').value;
-
-        if (!user || !key) {
-            addLog('Error: Credentials required first', 'error');
-            return;
-        }
-
+        if (!user || !key) { addLog('Error: Credentials required first', 'error'); return; }
         const confirmMsg = 'DANGER: Delete ALL instances in this tenancy?' + String.fromCharCode(10) + String.fromCharCode(10) + 'This will terminate EVERY running and stopped instance.' + String.fromCharCode(10) + String.fromCharCode(10) + 'This action CANNOT be undone.' + String.fromCharCode(10) + String.fromCharCode(10) + 'Type DELETE to confirm:';
         const input = prompt(confirmMsg);
         if (input !== 'DELETE') {
-            addLog('Bulk delete cancelled', 'warn');
-            return;
+            addLog('Bulk delete cancelled', 'warn'); return;
         }
-
-        addLog('&#128293; Initiating deletion of ALL instances...', 'error');
-
+        addLog('Initiating deletion of ALL instances...', 'error');
         try {
             const res = await fetch('/api/delete-all-instances', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user: user,
-                    tenancy: document.getElementById('cfgTenancy').value,
+                    user: user, tenancy: document.getElementById('cfgTenancy').value,
                     fingerprint: document.getElementById('cfgFingerprint').value,
                     region: document.getElementById('cfgRegion').value,
-                    private_key: key,
-                    timezone: userTimezone
+                    private_key: key, timezone: userTimezone
                 })
             });
             const data = await res.json();
-
             if (data.success) {
                 addLog('Deleted ' + data.deleted + ' instance(s)', 'success');
                 if (data.failed && data.failed.length > 0) {
-                    data.failed.forEach(f => addLog('Failed: ' + f.name + ' — ' + f.error, 'error'));
+                    data.failed.forEach(f => addLog('Failed: ' + f.name + ' - ' + f.error, 'error'));
                 }
                 setTimeout(checkQuota, 3000);
             } else {
@@ -1580,66 +1290,3 @@
             addLog('Bulk delete error: ' + err.message, 'error');
         }
     }
-
-    function clearAll() {
-        if (isRunning) {
-            addLog('Stop the provisioning loop before clearing', 'warn');
-            return;
-        }
-        document.getElementById('rawConfig').value = '';
-        document.getElementById('cfgUser').value = '';
-        document.getElementById('cfgTenancy').value = '';
-        document.getElementById('cfgFingerprint').value = '';
-        document.getElementById('cfgRegion').value = '';
-        document.getElementById('cfgKey').value = '';
-
-        var keyZone = document.getElementById('keyZone');
-        keyZone.classList.remove('success');
-        keyZone.innerHTML = '<input type="file" id="keyFile" accept=".pem,.txt,.key" onchange="handleKeyFile()">' +
-            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;">' +
-            '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' +
-            '<div style="font-size:12px;color:var(--text-muted);">Drop .pem, .txt, or .key file</div>';
-
-        document.getElementById('imageSelect').innerHTML = '<option value="">-- Scan images first --</option>';
-        document.getElementById('subnetSelect').innerHTML = '<option value="">-- Auto-select first available --</option>';
-        document.getElementById('subnetInfo').style.display = 'none';
-        document.getElementById('vnicSelect').innerHTML = '<option value="">-- Scan VNICs first --</option>';
-        document.getElementById('vnicInfo').style.display = 'none';
-
-        document.getElementById('vmName').value = 'AlwaysFree-Bot';
-        document.getElementById('ocpus').value = '2';
-        document.getElementById('memory').value = '12';
-        document.getElementById('bootVol').value = '50';
-        document.getElementById('sshKey').value = '';
-
-        var sshZone = document.getElementById('sshZone');
-        sshZone.classList.remove('success');
-        sshZone.innerHTML = '<input type="file" id="sshFile" accept=".pub,.txt" onchange="handleSSHFile()">' +
-            '<span style="font-size:12px;color:var(--text-muted);">Upload .pub file or paste below</span>';
-
-        document.getElementById('tgToken').value = '';
-        document.getElementById('tgChat').value = '';
-        document.getElementById('tgLiveLog').checked = false;
-        document.getElementById('tgLiveWarning').style.display = 'none';
-        document.getElementById('tgResult').innerHTML = '';
-        document.getElementById('vnicSelect').innerHTML = '<option value="">-- Scan VNICs first --</option>';
-        document.getElementById('vnicInfo').style.display = 'none';
-        document.getElementById('vmName').value = 'Arm';
-        document.getElementById('shapeInfo').style.display = 'none';
-        document.getElementById('shapeInfo').innerHTML = '';
-
-        document.getElementById('quotaPanel').style.display = 'none';
-        document.getElementById('quotaPanel').innerHTML = '';
-
-        clearLogs();
-        addLog('All fields cleared', 'success');
-    }
-
-    window.addEventListener('load', () => {
-        fetchLogs();
-        checkStatus();
-        setInterval(checkStatus, 5000);
-    });
-    </script>
-</body>
-</html>
