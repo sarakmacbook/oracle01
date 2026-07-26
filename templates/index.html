@@ -386,11 +386,14 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Private key (.pem)</label>
-                    <div class="upload-zone" id="keyZone">
-                        <input type="file" id="keyFile" accept=".pem,.txt,.key" onchange="handleKeyFile()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                        <div style="font-size:12px;color:var(--text-muted);">Drop .pem, .txt, or .key file</div>
-                    </div>
+                    <label class="upload-zone" id="keyZone" style="display:block;cursor:pointer;">
+                        <input type="file" id="keyFile" accept=".pem,.txt,.key" onchange="handleKeyFile()" style="position:absolute;opacity:0;width:0;height:0;">
+                        <div id="keyZoneContent">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <div style="font-size:12px;color:var(--text-muted);">Click or drop .pem, .txt, or .key file</div>
+                        </div>
+                    </label>
+                    <div style="margin-top:6px;font-size:11px;color:var(--text-muted);text-align:center;">Double-click to replace file</div>
                 </div>
                 <div class="btn-row">
                     <button class="btn" id="quotaBtn" onclick="checkQuota()">Check free tier</button>
@@ -483,10 +486,14 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">SSH public key</label>
-                    <div class="upload-zone" id="sshZone">
-                        <input type="file" id="sshFile" accept=".pub,.txt" onchange="handleSSHFile()">
-                        <span style="font-size:12px;color:var(--text-muted);">Upload .pub file or paste below</span>
-                    </div>
+                    <label class="upload-zone" id="sshZone" style="display:block;cursor:pointer;">
+                        <input type="file" id="sshFile" accept=".pub,.txt" onchange="handleSSHFile()" style="position:absolute;opacity:0;width:0;height:0;">
+                        <div id="sshZoneContent">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <div style="font-size:12px;color:var(--text-muted);">Click or drop .pub, .txt file</div>
+                        </div>
+                    </label>
+                    <div style="margin-top:6px;font-size:11px;color:var(--text-muted);text-align:center;">Double-click to replace file</div>
                     <textarea id="sshKey" class="form-textarea ssh-area" placeholder="ssh-rsa AAAAB3..."></textarea>
                 </div>
                 <div class="form-group" style="background:var(--surface-raised);padding:12px;border-radius:var(--radius-md);border:1px solid var(--border);">
@@ -641,8 +648,10 @@
         reader.onload = e => {
             document.getElementById('cfgKey').value = e.target.result;
             const zone = document.getElementById('keyZone');
-            zone.innerHTML = '<span style="color:var(--positive);font-size:12px;">Key loaded: ' + file.name + '</span>';
+            const content = document.getElementById('keyZoneContent');
+            content.innerHTML = '<span style="color:var(--positive);font-size:12px;">&#9989; Key loaded: ' + file.name + '</span>';
             zone.classList.add('success');
+            addLog('Private key loaded: ' + file.name, 'success');
         };
         reader.readAsText(file);
     }
@@ -651,10 +660,11 @@
         if (e.target.tagName === 'INPUT') return;
         document.getElementById('cfgKey').value = '';
         this.classList.remove('success');
-        this.innerHTML = '<input type="file" id="keyFile" accept=".pem,.txt,.key" onchange="handleKeyFile()">' +
+        document.getElementById('keyZoneContent').innerHTML =
             '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;">' +
             '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' +
-            '<div style="font-size:12px;color:var(--text-muted);">Drop .pem, .txt, or .key file</div>';
+            '<div style="font-size:12px;color:var(--text-muted);">Click or drop .pem, .txt, or .key file</div>';
+        document.getElementById('keyFile').value = '';
         addLog('Private key cleared', 'warn');
     });
 
@@ -665,8 +675,10 @@
         reader.onload = e => {
             document.getElementById('sshKey').value = e.target.result.trim();
             const zone = document.getElementById('sshZone');
-            zone.innerHTML = '<span style="color:var(--positive);font-size:12px;">Key loaded: ' + file.name + '</span>';
+            const content = document.getElementById('sshZoneContent');
+            content.innerHTML = '<span style="color:var(--positive);font-size:12px;">&#9989; Key loaded: ' + file.name + '</span>';
             zone.classList.add('success');
+            addLog('SSH key loaded: ' + file.name, 'success');
         };
         reader.readAsText(file);
     }
@@ -675,8 +687,11 @@
         if (e.target.tagName === 'INPUT') return;
         document.getElementById('sshKey').value = '';
         this.classList.remove('success');
-        this.innerHTML = '<input type="file" id="sshFile" accept=".pub,.txt" onchange="handleSSHFile()">' +
-            '<span style="font-size:12px;color:var(--text-muted);">Upload .pub file or paste below</span>';
+        document.getElementById('sshZoneContent').innerHTML =
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:6px;">' +
+            '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' +
+            '<div style="font-size:12px;color:var(--text-muted);">Click or drop .pub, .txt file</div>';
+        document.getElementById('sshFile').value = '';
         addLog('SSH key cleared', 'warn');
     });
 
