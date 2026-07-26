@@ -847,10 +847,11 @@
                     u.all_instances.forEach(inst => {
                         const shapeInfo = inst.ocpus ? ' (' + inst.ocpus + ' OCPU, ' + inst.memory + ' GB)' : '';
                         const stateColor = inst.state === 'RUNNING' ? 'var(--positive)' : 'var(--warning)';
+                        const ipLine = inst.public_ip ? '<span style="color:var(--accent);font-weight:500;">IP: ' + inst.public_ip + '</span> | ' : '';
                         html += '<div class="instance-row">';
                         html += '<div class="instance-info">';
                         html += '<div class="instance-name">' + inst.name + '</div>';
-                        html += '<div class="instance-meta">' + inst.shape + shapeInfo + ' | <span style="color:' + stateColor + '">' + inst.state + '</span></div>';
+                        html += '<div class="instance-meta">' + ipLine + inst.shape + shapeInfo + ' | <span style="color:' + stateColor + '">' + inst.state + '</span></div>';
                         html += '</div>';
                         html += '<button class="instance-delete" onclick="deleteInstance(' + "'" + inst.id + "'" + ',' + "'" + inst.name + "'" + ')" title="Delete this instance">&#128465;</button>';
                         html += '</div>';
